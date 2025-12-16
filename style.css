@@ -6,41 +6,92 @@
 }
 
 body {
-    background: linear-gradient(135deg, #0a1a2a, #1a2a3a, #0a1a2a);
+    background: 
+        linear-gradient(135deg, rgba(165, 42, 42, 0.9), rgba(218, 165, 32, 0.8), rgba(139, 69, 19, 0.9)),
+        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><defs><pattern id="chicken" patternUnits="userSpaceOnUse" width="200" height="200"><g fill="rgba(255,255,255,0.05)"><path d="M100,50 Q130,70 140,40 Q150,20 100,50z" /><path d="M60,60 Q50,90 30,70 Q20,50 60,60z" /><circle cx="120" cy="45" r="5" fill="rgba(255,255,255,0.1)"/></g></pattern></defs><rect width="100%" height="100%" fill="url(%23chicken)"/></svg>');
     color: #fff;
     min-height: 100vh;
     padding: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+}
+
+/* Chicken wire pattern overlay */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        radial-gradient(circle at 25% 25%, rgba(255, 215, 0, 0.1) 2px, transparent 2px),
+        radial-gradient(circle at 75% 75%, rgba(255, 140, 0, 0.1) 2px, transparent 2px);
+    background-size: 100px 100px;
+    pointer-events: none;
 }
 
 .container {
     max-width: 500px;
     width: 100%;
-    background-color: rgba(25, 35, 50, 0.95);
+    background-color: rgba(60, 30, 10, 0.95);
     border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(0, 100, 255, 0.3);
+    box-shadow: 0 15px 35px rgba(160, 82, 45, 0.4);
     overflow: hidden;
-    border: 1px solid rgba(0, 180, 255, 0.4);
+    border: 2px solid rgba(218, 165, 32, 0.6);
+    position: relative;
+    z-index: 1;
+}
+
+/* Chicken head decoration */
+.container::before {
+    content: '🐔';
+    position: absolute;
+    top: -25px;
+    right: 20px;
+    font-size: 2rem;
+    z-index: 2;
+    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
 }
 
 .header {
-    background: linear-gradient(90deg, #001a3a, #003a6a);
+    background: linear-gradient(90deg, #8B4513, #D2691E, #A0522D);
     padding: 30px;
     text-align: center;
-    border-bottom: 3px solid #00aaff;
+    border-bottom: 3px solid #FFD700;
+    position: relative;
+}
+
+/* Egg decoration */
+.header::after {
+    content: '🥚';
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border: 2px solid #D2691E;
 }
 
 .header h1 {
     font-size: 2rem;
     margin-bottom: 10px;
-    color: #66ccff;
-    text-shadow: 0 2px 10px rgba(0, 170, 255, 0.3);
+    color: #FFD700;
+    text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+    font-weight: 800;
 }
 
 .header p {
-    color: #88aadd;
+    color: #FFE4B5;
     font-size: 1rem;
 }
 
@@ -49,31 +100,46 @@ body {
 }
 
 .info-card {
-    background-color: rgba(35, 45, 65, 0.9);
+    background-color: rgba(101, 67, 33, 0.9);
     border-radius: 15px;
     padding: 25px;
     margin-bottom: 25px;
     text-align: center;
-    border: 1px solid rgba(0, 200, 255, 0.3);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
+    position: relative;
+}
+
+/* Feather decoration */
+.info-card::before {
+    content: '🪶';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 1.2rem;
+    opacity: 0.6;
 }
 
 .card-icon {
     font-size: 3.5rem;
-    color: #00aaff;
+    color: #FFA500;
     margin-bottom: 20px;
-    text-shadow: 0 0 20px rgba(0, 170, 255, 0.5);
+    text-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
 }
 
 .card-title {
     font-size: 1.6rem;
-    color: #66ccff;
+    color: #FFD700;
     margin-bottom: 15px;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .card-text {
     font-size: 1rem;
-    color: #aaccff;
+    color: #FFEBCD;
     line-height: 1.6;
     margin-bottom: 20px;
 }
@@ -96,15 +162,15 @@ body {
 }
 
 .btn-optimize {
-    background: linear-gradient(90deg, #0066cc, #00aaff);
+    background: linear-gradient(90deg, #D2691E, #FF8C00, #FFA500);
     color: white;
-    box-shadow: 0 5px 20px rgba(0, 100, 255, 0.4);
+    box-shadow: 0 5px 20px rgba(210, 105, 30, 0.5);
 }
 
 .btn-optimize:hover:not(:disabled) {
-    background: linear-gradient(90deg, #0055bb, #0099ee);
+    background: linear-gradient(90deg, #A0522D, #D2691E, #FF8C00);
     transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 100, 255, 0.6);
+    box-shadow: 0 8px 25px rgba(210, 105, 30, 0.7);
 }
 
 .btn:disabled {
@@ -114,13 +180,22 @@ body {
 }
 
 .process-box {
-    background-color: rgba(40, 50, 70, 0.9);
+    background-color: rgba(139, 69, 19, 0.9);
     border-radius: 15px;
     padding: 25px;
     margin: 25px 0;
     text-align: center;
-    border: 1px solid rgba(0, 220, 255, 0.4);
+    border: 2px solid rgba(255, 215, 0, 0.5);
     display: none;
+    position: relative;
+}
+
+.process-box::before {
+    content: '🐣';
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-size: 2rem;
 }
 
 .process-box.active {
@@ -130,12 +205,12 @@ body {
 
 .process-icon {
     font-size: 2.8rem;
-    color: #00ccff;
+    color: #FFD700;
     margin-bottom: 20px;
 }
 
 .process-text {
-    color: #bbddff;
+    color: #FFEBCD;
     font-size: 1.1rem;
     font-weight: 600;
     margin-top: 15px;
@@ -143,14 +218,27 @@ body {
 }
 
 .success-box {
-    background: linear-gradient(135deg, rgba(30, 70, 40, 0.9), rgba(20, 50, 30, 0.9));
+    background: linear-gradient(135deg, rgba(34, 139, 34, 0.9), rgba(107, 142, 35, 0.9));
     border-radius: 15px;
     padding: 30px;
     text-align: center;
-    border: 1px solid rgba(100, 255, 150, 0.5);
+    border: 2px solid rgba(255, 215, 0, 0.6);
     display: none;
     margin-top: 25px;
-    box-shadow: 0 10px 30px rgba(0, 255, 100, 0.2);
+    box-shadow: 0 10px 30px rgba(154, 205, 50, 0.3);
+    position: relative;
+}
+
+/* Chick decoration */
+.success-box::before {
+    content: '🐤';
+    position: absolute;
+    bottom: -15px;
+    right: 20px;
+    font-size: 2rem;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    padding: 5px;
 }
 
 .success-box.active {
@@ -160,33 +248,33 @@ body {
 
 .success-icon {
     font-size: 4rem;
-    color: #00ff88;
+    color: #32CD32;
     margin-bottom: 20px;
-    text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+    text-shadow: 0 0 30px rgba(50, 205, 50, 0.5);
 }
 
 .success-title {
     font-size: 1.8rem;
-    color: #00ff88;
+    color: #ADFF2F;
     margin-bottom: 15px;
 }
 
 .success-message {
     font-size: 1.05rem;
-    color: #aaffcc;
+    color: #90EE90;
     line-height: 1.6;
     margin-bottom: 20px;
 }
 
 .data-box {
-    background-color: rgba(15, 25, 40, 0.9);
+    background-color: rgba(160, 82, 45, 0.9);
     border-radius: 10px;
     padding: 15px;
     font-family: monospace;
-    color: #88ccff;
+    color: #FFD700;
     word-break: break-all;
     font-size: 0.85rem;
-    border: 1px solid rgba(0, 170, 255, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.4);
     margin-top: 20px;
     text-align: left;
 }
@@ -194,10 +282,22 @@ body {
 .footer {
     text-align: center;
     padding: 20px;
-    color: #7799cc;
+    color: #DEB887;
     font-size: 0.85rem;
-    border-top: 1px solid rgba(0, 100, 255, 0.3);
-    background-color: rgba(20, 30, 45, 0.7);
+    border-top: 2px solid rgba(210, 105, 30, 0.4);
+    background-color: rgba(101, 67, 33, 0.7);
+}
+
+/* Chicken footprints animation */
+@keyframes chickenWalk {
+    0% { transform: translateX(-10px) rotate(-5deg); }
+    50% { transform: translateX(10px) rotate(5deg); }
+    100% { transform: translateX(-10px) rotate(-5deg); }
+}
+
+.header h1 i {
+    display: inline-block;
+    animation: chickenWalk 2s infinite ease-in-out;
 }
 
 @keyframes slideIn {
@@ -211,12 +311,18 @@ body {
 }
 
 .note {
-    background-color: rgba(0, 100, 255, 0.1);
-    border: 1px solid #00aaff;
-    color: #88ccff;
+    background-color: rgba(210, 105, 30, 0.2);
+    border: 1px solid #FFA500;
+    color: #FFE4B5;
     padding: 10px;
     border-radius: 8px;
     margin: 15px 0;
     text-align: center;
     font-size: 0.85rem;
+}
+
+/* Add some chicken-themed emojis to text */
+.success-message::after {
+    content: " 🍗🐓🥚";
+    font-size: 1.2rem;
 }
