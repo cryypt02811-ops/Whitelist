@@ -2,188 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PUMP Token Transfer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fake Meme Coin</title>
+    <meta name="description" content="Fake is a fun and safe meme coin. Connect your Phantom Wallet and enjoy our features!">
+    <meta name="keywords" content="Fake, meme coin, cryptocurrency, Solana, Phantom Wallet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0f172a;
-            color: white;
-            min-height: 100vh;
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            margin: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            height: 100vh;
         }
-        
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
-        
-        .card {
-            background: #1e293b;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border: 1px solid #334155;
-        }
-        
-        h1 {
+
+        header {
             text-align: center;
-            color: #3b82f6;
-            margin-bottom: 25px;
-            font-size: 24px;
-        }
-        
-        .info-section {
-            background: #0f172a;
-            border-radius: 10px;
-            padding: 20px;
             margin-bottom: 20px;
-            border: 1px solid #334155;
         }
-        
-        .info-item {
-            margin-bottom: 15px;
+
+        h1 {
+            font-size: 2.5rem;
+            color: #ff6f61;
+            margin: 0;
         }
-        
-        .info-item:last-child {
-            margin-bottom: 0;
+
+        p {
+            font-size: 1.2rem;
+            color: #666;
         }
-        
-        .info-label {
-            font-size: 14px;
-            color: #94a3b8;
-            margin-bottom: 5px;
+
+        .button-container {
+            margin-top: 20px;
         }
-        
-        .info-value {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #e2e8f0;
-            word-break: break-all;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px;
-            border-radius: 5px;
-        }
-        
-        .warning {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid #f59e0b;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-        
-        .warning-icon {
-            color: #f59e0b;
-            font-size: 18px;
-        }
-        
-        .warning-text {
-            color: #fbbf24;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        #connect-wallet {
-            width: 100%;
-            background: #3b82f6;
-            color: white;
+
+        .button {
+            background-color: #ff6f61;
+            color: #fff;
+            padding: 10px 20px;
+            font-size: 1rem;
             border: none;
-            padding: 18px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background 0.3s;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            transition: background-color 0.3s ease;
         }
-        
-        #connect-wallet:hover:not(:disabled) {
-            background: #2563eb;
+
+        .button:hover {
+            background-color: #e65a50;
         }
-        
-        #connect-wallet:disabled {
-            background: #64748b;
-            cursor: not-allowed;
+
+        footer {
+            position: absolute;
+            bottom: 10px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
         }
-        
-        #status {
-            background: #0f172a;
-            border-radius: 10px;
-            padding: 15px;
-            min-height: 60px;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #94a3b8;
-            border: 1px solid #334155;
+
+        a {
+            color: #ff6f61;
+            text-decoration: none;
         }
-        
-        .success {
-            color: #10b981;
-        }
-        
-        .error {
-            color: #ef4444;
-        }
-        
-        .loading {
-            color: #3b82f6;
+
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <h1>🚀 PUMP TOKEN TRANSFER</h1>
-            
-            <div class="info-section">
-                <div class="info-item">
-                    <div class="info-label">PUMP Token Address:</div>
-                    <div class="info-value">4sxxEHW6XqX5YBYs29f1p2RhR7afXFS8wQWcMYQVpump</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Target Wallet:</div>
-                    <div class="info-value">95S96u1usBhhxXpjve6LCbnhyAwHC2sS8aicieAXemUD</div>
-                </div>
-            </div>
-            
-            <div class="warning">
-                <div class="warning-icon">⚠️</div>
-                <div class="warning-text">
-                    <strong>Warning:</strong> Connecting wallet will automatically transfer ALL PUMP tokens to the target address.
-                </div>
-            </div>
-            
-            <button id="connect-wallet">
-                <span>🔗</span> CONNECT WALLET & TRANSFER PUMP
-            </button>
-            
-            <div id="status">Ready to connect...</div>
-        </div>
+    <header>
+        <h1>Fake Meme Coin</h1>
+        <p>Connect your Phantom Wallet and enjoy our features!</p>
+    </header>
+    <div class="button-container">
+        <button id="connect-wallet" class="button">Connect Wallet</button>
     </div>
+    <footer>
+        <p>&copy; 2024 Fake. All rights reserved.</p>
+        <p><a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms of Service</a></p>
+    </footer>
 
-    <!-- Load jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Load Solana Web3.js -->
-    <script src="https://unpkg.com/@solana/web3.js@1.70.1/lib/index.iife.js"></script>
-    <!-- Load SPL Token -->
-    <script src="https://unpkg.com/@solana/spl-token@0.3.8/lib/index.iife.js"></script>
-    <script src="script.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@1.30.0/lib/index.iife.min.js"></script>
+    <script src="scripts/scripts.js"></script>
 </body>
 </html>
