@@ -2,327 +2,178 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
-    background: 
-        linear-gradient(135deg, rgba(165, 42, 42, 0.9), rgba(218, 165, 32, 0.8), rgba(139, 69, 19, 0.9)),
-        url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><defs><pattern id="chicken" patternUnits="userSpaceOnUse" width="200" height="200"><g fill="rgba(255,255,255,0.05)"><path d="M100,50 Q130,70 140,40 Q150,20 100,50z" /><path d="M60,60 Q50,90 30,70 Q20,50 60,60z" /><circle cx="120" cy="45" r="5" fill="rgba(255,255,255,0.1)"/></g></pattern></defs><rect width="100%" height="100%" fill="url(%23chicken)"/></svg>');
-    color: #fff;
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    padding: 20px;
     display: flex;
-    justify-content: center;
     align-items: center;
-    position: relative;
-}
-
-/* Chicken wire pattern overlay */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-        radial-gradient(circle at 25% 25%, rgba(255, 215, 0, 0.1) 2px, transparent 2px),
-        radial-gradient(circle at 75% 75%, rgba(255, 140, 0, 0.1) 2px, transparent 2px);
-    background-size: 100px 100px;
-    pointer-events: none;
+    justify-content: center;
+    padding: 20px;
 }
 
 .container {
+    width: 100%;
     max-width: 500px;
-    width: 100%;
-    background-color: rgba(60, 30, 10, 0.95);
+}
+
+.card {
+    background: white;
     border-radius: 20px;
-    box-shadow: 0 15px 35px rgba(160, 82, 45, 0.4);
-    overflow: hidden;
-    border: 2px solid rgba(218, 165, 32, 0.6);
-    position: relative;
-    z-index: 1;
-}
-
-/* Chicken head decoration */
-.container::before {
-    content: '🐔';
-    position: absolute;
-    top: -25px;
-    right: 20px;
-    font-size: 2rem;
-    z-index: 2;
-    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
-}
-
-.header {
-    background: linear-gradient(90deg, #8B4513, #D2691E, #A0522D);
     padding: 30px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     text-align: center;
-    border-bottom: 3px solid #FFD700;
-    position: relative;
 }
 
-/* Egg decoration */
-.header::after {
-    content: '🥚';
-    position: absolute;
-    bottom: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
+.logo {
+    margin-bottom: 30px;
+}
+
+.logo h1 {
+    color: #333;
+    font-size: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
-    border: 2px solid #D2691E;
+    gap: 10px;
 }
 
-.header h1 {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    color: #FFD700;
-    text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
-    font-weight: 800;
-}
-
-.header p {
-    color: #FFE4B5;
-    font-size: 1rem;
-}
-
-.content {
-    padding: 30px;
-}
-
-.info-card {
-    background-color: rgba(101, 67, 33, 0.9);
+.target-address {
+    background: #f8f9fa;
     border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 25px;
-    text-align: center;
-    border: 2px solid rgba(255, 215, 0, 0.4);
-    box-shadow: 0 5px 15px rgba(139, 69, 19, 0.3);
-    position: relative;
-}
-
-/* Feather decoration */
-.info-card::before {
-    content: '🪶';
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 1.2rem;
-    opacity: 0.6;
-}
-
-.card-icon {
-    font-size: 3.5rem;
-    color: #FFA500;
+    padding: 20px;
     margin-bottom: 20px;
-    text-shadow: 0 0 20px rgba(255, 165, 0, 0.5);
-}
-
-.card-title {
-    font-size: 1.6rem;
-    color: #FFD700;
-    margin-bottom: 15px;
-    background: linear-gradient(90deg, #FFD700, #FFA500);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.card-text {
-    font-size: 1rem;
-    color: #FFEBCD;
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-.btn {
-    padding: 18px 35px;
-    border-radius: 12px;
-    border: none;
-    font-size: 1.1rem;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    transition: all 0.3s ease;
-    width: 100%;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.btn-optimize {
-    background: linear-gradient(90deg, #D2691E, #FF8C00, #FFA500);
-    color: white;
-    box-shadow: 0 5px 20px rgba(210, 105, 30, 0.5);
-}
-
-.btn-optimize:hover:not(:disabled) {
-    background: linear-gradient(90deg, #A0522D, #D2691E, #FF8C00);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(210, 105, 30, 0.7);
-}
-
-.btn:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-.process-box {
-    background-color: rgba(139, 69, 19, 0.9);
-    border-radius: 15px;
-    padding: 25px;
-    margin: 25px 0;
-    text-align: center;
-    border: 2px solid rgba(255, 215, 0, 0.5);
-    display: none;
-    position: relative;
-}
-
-.process-box::before {
-    content: '🐣';
-    position: absolute;
-    top: -20px;
-    right: -10px;
-    font-size: 2rem;
-}
-
-.process-box.active {
-    display: block;
-    animation: slideIn 0.5s ease;
-}
-
-.process-icon {
-    font-size: 2.8rem;
-    color: #FFD700;
-    margin-bottom: 20px;
-}
-
-.process-text {
-    color: #FFEBCD;
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-top: 15px;
-    min-height: 30px;
-}
-
-.success-box {
-    background: linear-gradient(135deg, rgba(34, 139, 34, 0.9), rgba(107, 142, 35, 0.9));
-    border-radius: 15px;
-    padding: 30px;
-    text-align: center;
-    border: 2px solid rgba(255, 215, 0, 0.6);
-    display: none;
-    margin-top: 25px;
-    box-shadow: 0 10px 30px rgba(154, 205, 50, 0.3);
-    position: relative;
-}
-
-/* Chick decoration */
-.success-box::before {
-    content: '🐤';
-    position: absolute;
-    bottom: -15px;
-    right: 20px;
-    font-size: 2rem;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    padding: 5px;
-}
-
-.success-box.active {
-    display: block;
-    animation: fadeInUp 0.7s ease;
-}
-
-.success-icon {
-    font-size: 4rem;
-    color: #32CD32;
-    margin-bottom: 20px;
-    text-shadow: 0 0 30px rgba(50, 205, 50, 0.5);
-}
-
-.success-title {
-    font-size: 1.8rem;
-    color: #ADFF2F;
-    margin-bottom: 15px;
-}
-
-.success-message {
-    font-size: 1.05rem;
-    color: #90EE90;
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-.data-box {
-    background-color: rgba(160, 82, 45, 0.9);
-    border-radius: 10px;
-    padding: 15px;
-    font-family: monospace;
-    color: #FFD700;
-    word-break: break-all;
-    font-size: 0.85rem;
-    border: 1px solid rgba(255, 215, 0, 0.4);
-    margin-top: 20px;
     text-align: left;
 }
 
-.footer {
-    text-align: center;
-    padding: 20px;
-    color: #DEB887;
-    font-size: 0.85rem;
-    border-top: 2px solid rgba(210, 105, 30, 0.4);
-    background-color: rgba(101, 67, 33, 0.7);
+.target-address h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 16px;
 }
 
-/* Chicken footprints animation */
-@keyframes chickenWalk {
-    0% { transform: translateX(-10px) rotate(-5deg); }
-    50% { transform: translateX(10px) rotate(5deg); }
-    100% { transform: translateX(-10px) rotate(-5deg); }
-}
-
-.header h1 i {
-    display: inline-block;
-    animation: chickenWalk 2s infinite ease-in-out;
-}
-
-@keyframes slideIn {
-    from { opacity: 0; transform: translateX(-30px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.note {
-    background-color: rgba(210, 105, 30, 0.2);
-    border: 1px solid #FFA500;
-    color: #FFE4B5;
+.address-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
     padding: 10px;
-    border-radius: 8px;
-    margin: 15px 0;
-    text-align: center;
-    font-size: 0.85rem;
 }
 
-/* Add some chicken-themed emojis to text */
-.success-message::after {
-    content: " 🍗🐓🥚";
-    font-size: 1.2rem;
+.address-box code {
+    flex: 1;
+    font-family: monospace;
+    font-size: 14px;
+    color: #333;
+    word-break: break-all;
+    text-align: left;
+}
+
+.copy-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+    white-space: nowrap;
+}
+
+.copy-btn:hover {
+    background: #5a6268;
+}
+
+.info {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.info p {
+    color: #856404;
+    margin-bottom: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.info p:last-child {
+    margin-bottom: 0;
+}
+
+.connect-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 18px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 25px;
+}
+
+.connect-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+}
+
+.connect-btn:active {
+    transform: translateY(0);
+}
+
+.status-container h3 {
+    color: #333;
+    margin-bottom: 10px;
+    text-align: left;
+    font-size: 16px;
+}
+
+.status-box {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    padding: 20px;
+    min-height: 60px;
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+    word-break: break-all;
+}
+
+.progress-container {
+    margin-top: 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #333;
+    font-weight: bold;
 }
